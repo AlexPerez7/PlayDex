@@ -64,7 +64,7 @@ export function GameDetail() {
     if (!game) return
     const minutes = Number(sessionMinutes)
     if (!minutes || minutes <= 0) {
-      setSessionError('Ingresá una duración válida en minutos')
+      setSessionError('Ingresa una duración válida en minutos')
       return
     }
     setSessionError(null)
@@ -262,7 +262,7 @@ export function GameDetail() {
             </h2>
             {lists.length === 0 ? (
               <p className="text-sm text-slate-500">
-                No tenés listas todavía. Creá una desde la pestaña "Listas".
+                No tienes listas todavía. Crea una desde la pestaña "Listas".
               </p>
             ) : (
               <div className="flex flex-wrap gap-2">

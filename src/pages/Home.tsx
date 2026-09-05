@@ -97,7 +97,7 @@ export function Home() {
         {refreshing
           ? 'Actualizando...'
           : pullDistance > PULL_THRESHOLD
-            ? 'Soltá para actualizar'
+            ? 'Suelta para actualizar'
             : pullDistance > 0
               ? '↓'
               : ''}

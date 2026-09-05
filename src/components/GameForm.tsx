@@ -134,7 +134,7 @@ export function GameForm({ onSubmit, existingIgdbIds }: GameFormProps) {
 
         {form.igdb_id != null && existingIgdbIds?.has(form.igdb_id) && (
           <p className="mt-2 text-sm text-amber-400">
-            Ya tenés este juego en tu biblioteca. Podés seguir y agregarlo igual si querés otra copia (ej. otra plataforma).
+            Ya tienes este juego en tu biblioteca. Puedes seguir y agregarlo igual si quieres otra copia (ej. otra plataforma).
           </p>
         )}
       </div>

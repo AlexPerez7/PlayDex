@@ -24,7 +24,7 @@ export function Login() {
     if (error) {
       setError(error.message)
     } else if (mode === 'signup') {
-      setMessage('Cuenta creada. Revisá tu email para confirmar.')
+      setMessage('Cuenta creada. Revisa tu email para confirmar.')
     }
     setLoading(false)
   }
@@ -74,8 +74,8 @@ export function Login() {
           className="text-sm text-slate-400"
         >
           {mode === 'signin'
-            ? '¿No tenés cuenta? Registrate'
-            : '¿Ya tenés cuenta? Iniciá sesión'}
+            ? '¿No tienes cuenta? Regístrate'
+            : '¿Ya tienes cuenta? Inicia sesión'}
         </button>
       </form>
     </div>
