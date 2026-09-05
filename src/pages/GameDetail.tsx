@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useGames } from '../hooks/useGames'
 import { usePlaySessions } from '../hooks/usePlaySessions'
+import { useLists, useGameListIds } from '../hooks/useLists'
 import { StarRating } from '../components/StarRating'
 import { TagList } from '../components/TagList'
 import { PageContainer } from '../components/PageContainer'
@@ -25,6 +26,8 @@ export function GameDetail() {
   const { games, loading, updateGame, deleteGame } = useGames()
   const game = games.find((g) => g.id === id)
   const { sessions, addSession, deleteSession } = usePlaySessions(game?.id)
+  const { lists } = useLists()
+  const { listIds, toggle: toggleList } = useGameListIds(game?.id)
 
   const [form, setForm] = useState<Partial<Game> | null>(null)
   const [saving, setSaving] = useState(false)
@@ -219,6 +222,18 @@ export function GameDetail() {
               value={current?.notes ?? ''}
               onChange={(e) => setForm({ ...(form ?? game), notes: e.target.value })}
               rows={3}
+              placeholder="Notas de progreso, spoilers, pendientes..."
+              className="w-full rounded-md bg-slate-900 px-3 py-2 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm text-slate-400">Reseña</label>
+            <textarea
+              value={current?.review ?? ''}
+              onChange={(e) => setForm({ ...(form ?? game), review: e.target.value })}
+              rows={4}
+              placeholder="Tu opinión sobre el juego..."
               className="w-full rounded-md bg-slate-900 px-3 py-2 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600"
             />
           </div>
@@ -239,6 +254,38 @@ export function GameDetail() {
             >
               Eliminar
             </button>
+          </div>
+
+          <div className="border-t border-slate-800 pt-4">
+            <h2 className="mb-2 text-sm font-medium text-slate-300">
+              Mis listas
+            </h2>
+            {lists.length === 0 ? (
+              <p className="text-sm text-slate-500">
+                No tenés listas todavía. Creá una desde la pestaña "Listas".
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {lists.map((list) => {
+                  const active = listIds.has(list.id)
+                  return (
+                    <button
+                      key={list.id}
+                      type="button"
+                      onClick={() => toggleList(list.id)}
+                      className={`rounded-full px-3 py-1 text-xs ${
+                        active
+                          ? 'bg-emerald-600 text-slate-950'
+                          : 'bg-slate-900 text-slate-400 ring-1 ring-slate-800'
+                      }`}
+                    >
+                      {active ? '✓ ' : '+ '}
+                      {list.name}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           <div className="border-t border-slate-800 pt-4">

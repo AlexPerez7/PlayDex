@@ -4,6 +4,7 @@ const links = [
   { to: '/home', label: 'Inicio', icon: '🏠' },
   { to: '/', label: 'Biblioteca', icon: '🎮' },
   { to: '/add', label: 'Agregar', icon: '➕' },
+  { to: '/lists', label: 'Listas', icon: '📋' },
   { to: '/dashboard', label: 'Dashboard', icon: '📊' },
 ]
 

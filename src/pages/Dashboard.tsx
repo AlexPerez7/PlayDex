@@ -1,10 +1,12 @@
 import { useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useGames } from '../hooks/useGames'
 import { StatsCard } from '../components/StatsCard'
 import { PageContainer } from '../components/PageContainer'
 import { parseTags } from '../lib/tags'
 
 export function Dashboard() {
+  const navigate = useNavigate()
   const { games, loading } = useGames()
 
   const stats = useMemo(() => {
@@ -47,7 +49,12 @@ export function Dashboard() {
 
   return (
     <PageContainer>
-      <h1 className="mb-4 text-xl font-semibold">Dashboard</h1>
+      <div className="mb-4 flex items-center justify-between">
+        <h1 className="text-xl font-semibold">Dashboard</h1>
+        <button onClick={() => navigate('/timeline')} className="text-sm text-emerald-400">
+          Ver diario →
+        </button>
+      </div>
 
       {loading ? (
         <p className="text-sm text-slate-400">Cargando...</p>

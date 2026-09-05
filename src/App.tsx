@@ -6,6 +6,9 @@ import { Library } from './pages/Library'
 import { AddGame } from './pages/AddGame'
 import { Dashboard } from './pages/Dashboard'
 import { GameDetail } from './pages/GameDetail'
+import { Lists } from './pages/Lists'
+import { ListDetail } from './pages/ListDetail'
+import { Timeline } from './pages/Timeline'
 import { Login } from './pages/Login'
 
 function App() {
@@ -30,7 +33,10 @@ function App() {
         <Route path="/home" element={<Home />} />
         <Route path="/add" element={<AddGame />} />
         <Route path="/game/:id" element={<GameDetail />} />
+        <Route path="/lists" element={<Lists />} />
+        <Route path="/lists/:id" element={<ListDetail />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/timeline" element={<Timeline />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <BottomNav />

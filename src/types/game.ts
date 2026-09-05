@@ -17,6 +17,7 @@ export interface Game {
   cover_url: string | null
   genre: string | null
   notes: string | null
+  review: string | null
   date_started: string | null
   date_finished: string | null
   summary: string | null
@@ -35,6 +36,13 @@ export interface PlaySession {
   duration_minutes: number
   played_at: string
   notes: string | null
+}
+
+export interface GameList {
+  id: string
+  user_id: string
+  name: string
+  created_at: string
 }
 
 export interface IgdbSearchResult {
