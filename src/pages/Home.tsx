@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getPopularGames, igdbResultToNewGame } from '../lib/igdb'
 import { useGames } from '../hooks/useGames'
 import { PageContainer } from '../components/PageContainer'
 import { TagList } from '../components/TagList'
 import type { IgdbSearchResult } from '../types/game'
+
+const PULL_THRESHOLD = 60
 
 export function Home() {
   const { games, addGame } = useGames()
@@ -12,16 +14,70 @@ export function Home() {
   const [error, setError] = useState<string | null>(null)
   const [addingId, setAddingId] = useState<number | null>(null)
 
+  const [pullDistance, setPullDistance] = useState(0)
+  const [refreshing, setRefreshing] = useState(false)
+  const pullDistanceRef = useRef(0)
+
+  async function loadPopular() {
+    try {
+      const data = await getPopularGames()
+      setPopular(data)
+      setError(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error cargando populares')
+    }
+  }
+
   useEffect(() => {
-    getPopularGames()
-      .then(setPopular)
-      .catch((err) =>
-        setError(err instanceof Error ? err.message : 'Error cargando populares')
-      )
-      .finally(() => setLoading(false))
+    loadPopular().finally(() => setLoading(false))
   }, [])
 
-  const ownedIgdbIds = new Set(games.map((g) => g.igdb_id).filter(Boolean))
+  useEffect(() => {
+    let startY = 0
+    let tracking = false
+
+    function onTouchStart(e: TouchEvent) {
+      if (window.scrollY === 0 && !refreshing) {
+        startY = e.touches[0].clientY
+        tracking = true
+      }
+    }
+
+    function onTouchMove(e: TouchEvent) {
+      if (!tracking) return
+      const delta = e.touches[0].clientY - startY
+      if (delta > 0) {
+        const clamped = Math.min(delta, 100)
+        pullDistanceRef.current = clamped
+        setPullDistance(clamped)
+      }
+    }
+
+    async function onTouchEnd() {
+      if (!tracking) return
+      tracking = false
+      if (pullDistanceRef.current > PULL_THRESHOLD) {
+        setRefreshing(true)
+        await loadPopular()
+        setRefreshing(false)
+      }
+      pullDistanceRef.current = 0
+      setPullDistance(0)
+    }
+
+    window.addEventListener('touchstart', onTouchStart, { passive: true })
+    window.addEventListener('touchmove', onTouchMove, { passive: true })
+    window.addEventListener('touchend', onTouchEnd)
+    return () => {
+      window.removeEventListener('touchstart', onTouchStart)
+      window.removeEventListener('touchmove', onTouchMove)
+      window.removeEventListener('touchend', onTouchEnd)
+    }
+  }, [refreshing])
+
+  const ownedIgdbIds = new Set(
+    games.map((g) => g.igdb_id).filter((id): id is number => id != null)
+  )
 
   async function handleQuickAdd(result: IgdbSearchResult) {
     setAddingId(result.id)
@@ -34,6 +90,19 @@ export function Home() {
 
   return (
     <PageContainer>
+      <div
+        className="flex items-center justify-center overflow-hidden text-xs text-slate-500 transition-[height]"
+        style={{ height: refreshing ? 32 : pullDistance * 0.4 }}
+      >
+        {refreshing
+          ? 'Actualizando...'
+          : pullDistance > PULL_THRESHOLD
+            ? 'Soltá para actualizar'
+            : pullDistance > 0
+              ? '↓'
+              : ''}
+      </div>
+
       <h1 className="mb-1 text-xl font-semibold">Inicio</h1>
       <p className="mb-4 text-sm text-slate-400">
         Juegos con más repercusión salidos en los últimos 2 años

@@ -15,6 +15,15 @@ const statusFilters: Array<GameStatus | 'todos'> = [
   'en_pausa',
 ]
 
+type SortOption = 'recientes' | 'titulo' | 'horas' | 'puntaje'
+
+const sortLabels: Record<SortOption, string> = {
+  recientes: 'Recién agregados',
+  titulo: 'Título (A-Z)',
+  horas: 'Más horas jugadas',
+  puntaje: 'Mejor puntuados',
+}
+
 export function Library() {
   const navigate = useNavigate()
   const { games, loading, error } = useGames()
@@ -23,6 +32,7 @@ export function Library() {
   )
   const [platformFilter, setPlatformFilter] = useState<string>('todas')
   const [search, setSearch] = useState('')
+  const [sortBy, setSortBy] = useState<SortOption>('recientes')
 
   const platforms = useMemo(() => {
     const set = new Set(games.flatMap((g) => parseTags(g.platform)))
@@ -37,6 +47,19 @@ export function Library() {
       search.trim() === '' ||
       g.title.toLowerCase().includes(search.trim().toLowerCase())
     return matchesStatus && matchesPlatform && matchesSearch
+  })
+
+  const sorted = [...filtered].sort((a, b) => {
+    switch (sortBy) {
+      case 'titulo':
+        return a.title.localeCompare(b.title)
+      case 'horas':
+        return b.hours_played - a.hours_played
+      case 'puntaje':
+        return (b.rating ?? 0) - (a.rating ?? 0)
+      default:
+        return 0
+    }
   })
 
   return (
@@ -66,7 +89,7 @@ export function Library() {
         )}
       </div>
 
-      <div className="mb-4 mt-3 flex gap-2 overflow-x-auto pb-1 md:mt-3">
+      <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
         {statusFilters.map((s) => (
           <button
             key={s}
@@ -82,17 +105,29 @@ export function Library() {
         ))}
       </div>
 
+      <select
+        value={sortBy}
+        onChange={(e) => setSortBy(e.target.value as SortOption)}
+        className="mb-4 w-full rounded-md bg-slate-900 px-3 py-2 text-sm text-slate-100 ring-1 ring-slate-800 md:w-auto"
+      >
+        {Object.entries(sortLabels).map(([value, label]) => (
+          <option key={value} value={value}>
+            Ordenar: {label}
+          </option>
+        ))}
+      </select>
+
       {loading && <p className="text-sm text-slate-400">Cargando...</p>}
       {error && <p className="text-sm text-red-400">{error}</p>}
 
-      {!loading && filtered.length === 0 && (
+      {!loading && sorted.length === 0 && (
         <p className="mt-8 text-center text-sm text-slate-500">
           No hay juegos que coincidan con el filtro.
         </p>
       )}
 
       <div className="flex flex-col gap-2 sm:grid sm:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((game) => (
+        {sorted.map((game) => (
           <GameCard
             key={game.id}
             game={game}

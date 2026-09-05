@@ -12,9 +12,10 @@ const statuses: GameStatus[] = [
 
 interface GameFormProps {
   onSubmit: (game: NewGame) => Promise<void>
+  existingIgdbIds?: Set<number>
 }
 
-export function GameForm({ onSubmit }: GameFormProps) {
+export function GameForm({ onSubmit, existingIgdbIds }: GameFormProps) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<IgdbSearchResult[]>([])
   const [searching, setSearching] = useState(false)
@@ -102,25 +103,39 @@ export function GameForm({ onSubmit }: GameFormProps) {
 
         {results.length > 0 && (
           <ul className="mt-2 max-h-64 space-y-1 overflow-y-auto rounded-md bg-slate-900 p-2 ring-1 ring-slate-800">
-            {results.map((r) => (
-              <li key={r.id}>
-                <button
-                  type="button"
-                  onClick={() => applyResult(r)}
-                  className="flex w-full items-center gap-2 rounded p-2 text-left text-sm hover:bg-slate-800"
-                >
-                  {r.cover_url && (
-                    <img
-                      src={r.cover_url}
-                      alt={r.name}
-                      className="h-10 w-8 rounded object-cover"
-                    />
-                  )}
-                  {r.name}
-                </button>
-              </li>
-            ))}
+            {results.map((r) => {
+              const owned = existingIgdbIds?.has(r.id)
+              return (
+                <li key={r.id}>
+                  <button
+                    type="button"
+                    onClick={() => applyResult(r)}
+                    className="flex w-full items-center gap-2 rounded p-2 text-left text-sm hover:bg-slate-800"
+                  >
+                    {r.cover_url && (
+                      <img
+                        src={r.cover_url}
+                        alt={r.name}
+                        className="h-10 w-8 rounded object-cover"
+                      />
+                    )}
+                    <span className="min-w-0 flex-1 truncate">{r.name}</span>
+                    {owned && (
+                      <span className="flex-shrink-0 rounded-full bg-slate-800 px-2 py-0.5 text-xs text-emerald-400">
+                        ya en tu biblioteca
+                      </span>
+                    )}
+                  </button>
+                </li>
+              )
+            })}
           </ul>
+        )}
+
+        {form.igdb_id != null && existingIgdbIds?.has(form.igdb_id) && (
+          <p className="mt-2 text-sm text-amber-400">
+            Ya tenés este juego en tu biblioteca. Podés seguir y agregarlo igual si querés otra copia (ej. otra plataforma).
+          </p>
         )}
       </div>
 

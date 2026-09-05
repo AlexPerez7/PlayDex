@@ -5,8 +5,12 @@ import { useGames } from '../hooks/useGames'
 import type { NewGame } from '../types/game'
 
 export function AddGame() {
-  const { addGame } = useGames()
+  const { games, addGame } = useGames()
   const navigate = useNavigate()
+
+  const existingIgdbIds = new Set(
+    games.map((g) => g.igdb_id).filter((id): id is number => id != null)
+  )
 
   async function handleSubmit(game: NewGame) {
     await addGame(game)
@@ -17,7 +21,7 @@ export function AddGame() {
     <PageContainer>
       <h1 className="mb-4 text-xl font-semibold">Agregar juego</h1>
       <div className="md:mx-auto md:max-w-md">
-        <GameForm onSubmit={handleSubmit} />
+        <GameForm onSubmit={handleSubmit} existingIgdbIds={existingIgdbIds} />
       </div>
     </PageContainer>
   )
