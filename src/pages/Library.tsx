@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGames } from '../hooks/useGames'
 import { GameCard } from '../components/GameCard'
+import { PageContainer } from '../components/PageContainer'
 import { parseTags } from '../lib/tags'
 import type { GameStatus } from '../types/game'
 
@@ -39,17 +40,33 @@ export function Library() {
   })
 
   return (
-    <div className="mx-auto max-w-md px-4 pb-24 pt-6">
+    <PageContainer>
       <h1 className="mb-4 text-xl font-semibold">Mi biblioteca</h1>
 
-      <input
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Buscar por título..."
-        className="mb-3 w-full rounded-md bg-slate-900 px-3 py-2 text-sm text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600"
-      />
+      <div className="md:flex md:items-start md:gap-3">
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar por título..."
+          className="mb-3 w-full rounded-md bg-slate-900 px-3 py-2 text-sm text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600 md:mb-0 md:max-w-xs"
+        />
 
-      <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+        {platforms.length > 1 && (
+          <select
+            value={platformFilter}
+            onChange={(e) => setPlatformFilter(e.target.value)}
+            className="mb-4 w-full rounded-md bg-slate-900 px-3 py-2 text-sm text-slate-100 ring-1 ring-slate-800 md:mb-0 md:w-auto"
+          >
+            {platforms.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
+
+      <div className="mb-4 mt-3 flex gap-2 overflow-x-auto pb-1 md:mt-3">
         {statusFilters.map((s) => (
           <button
             key={s}
@@ -65,20 +82,6 @@ export function Library() {
         ))}
       </div>
 
-      {platforms.length > 1 && (
-        <select
-          value={platformFilter}
-          onChange={(e) => setPlatformFilter(e.target.value)}
-          className="mb-4 w-full rounded-md bg-slate-900 px-3 py-2 text-sm text-slate-100 ring-1 ring-slate-800"
-        >
-          {platforms.map((p) => (
-            <option key={p} value={p}>
-              {p}
-            </option>
-          ))}
-        </select>
-      )}
-
       {loading && <p className="text-sm text-slate-400">Cargando...</p>}
       {error && <p className="text-sm text-red-400">{error}</p>}
 
@@ -88,7 +91,7 @@ export function Library() {
         </p>
       )}
 
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 sm:grid sm:grid-cols-2 lg:grid-cols-3">
         {filtered.map((game) => (
           <GameCard
             key={game.id}
@@ -97,6 +100,6 @@ export function Library() {
           />
         ))}
       </div>
-    </div>
+    </PageContainer>
   )
 }
