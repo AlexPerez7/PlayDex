@@ -244,28 +244,30 @@ export function GameDetail() {
             Sesiones de juego
           </h2>
 
-          <div className="mb-3 flex gap-2">
+          <div className="mb-3 flex flex-col gap-2">
             <input
               type="date"
               value={sessionDate}
               onChange={(e) => setSessionDate(e.target.value)}
-              className="w-36 rounded-md bg-slate-900 px-2 py-2 text-sm text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600"
+              className="w-full rounded-md bg-slate-900 px-3 py-2 text-sm text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600"
             />
-            <input
-              type="number"
-              min={1}
-              placeholder="Minutos"
-              value={sessionMinutes}
-              onChange={(e) => setSessionMinutes(e.target.value)}
-              className="flex-1 rounded-md bg-slate-900 px-3 py-2 text-sm text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600"
-            />
-            <button
-              type="button"
-              onClick={handleAddSession}
-              className="rounded-md bg-emerald-700 px-3 py-2 text-sm font-medium"
-            >
-              Agregar
-            </button>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                min={1}
+                placeholder="Minutos"
+                value={sessionMinutes}
+                onChange={(e) => setSessionMinutes(e.target.value)}
+                className="min-w-0 flex-1 rounded-md bg-slate-900 px-3 py-2 text-sm text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600"
+              />
+              <button
+                type="button"
+                onClick={handleAddSession}
+                className="flex-shrink-0 rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium"
+              >
+                Agregar
+              </button>
+            </div>
           </div>
           {sessionError && <p className="mb-2 text-sm text-red-400">{sessionError}</p>}
 

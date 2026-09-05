@@ -97,7 +97,7 @@ export function GameForm({ onSubmit }: GameFormProps) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Nombre del juego..."
-            className="flex-1 rounded-md bg-slate-900 px-3 py-2 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600"
+            className="min-w-0 flex-1 rounded-md bg-slate-900 px-3 py-2 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600"
           />
           <button
             type="button"
