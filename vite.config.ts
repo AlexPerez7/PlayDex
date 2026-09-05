@@ -15,6 +15,7 @@ export default defineConfig({
         name: 'PlayDex',
         short_name: 'PlayDex',
         description: 'Trackea tu backlog, progreso y horas jugadas',
+        lang: 'es',
         theme_color: '#0f172a',
         background_color: '#0f172a',
         display: 'standalone',
