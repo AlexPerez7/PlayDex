@@ -1,3 +1,4 @@
+import { TagList } from './TagList'
 import type { Game, GameStatus } from '../types/game'
 
 const statusLabels: Record<GameStatus, string> = {
@@ -42,9 +43,13 @@ export function GameCard({ game, onClick }: GameCardProps) {
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium text-slate-100">{game.title}</p>
-        <p className="truncate text-sm text-slate-400">
-          {game.platform ?? 'Sin plataforma'}
-        </p>
+        {game.platform ? (
+          <div className="mt-0.5">
+            <TagList value={game.platform} />
+          </div>
+        ) : (
+          <p className="text-sm text-slate-400">Sin plataforma</p>
+        )}
         <div className="mt-1 flex items-center gap-2">
           <span
             className={`rounded-full px-2 py-0.5 text-xs ${statusColors[game.status]}`}

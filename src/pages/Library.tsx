@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGames } from '../hooks/useGames'
 import { GameCard } from '../components/GameCard'
+import { parseTags } from '../lib/tags'
 import type { GameStatus } from '../types/game'
 
 const statusFilters: Array<GameStatus | 'todos'> = [
@@ -20,22 +21,33 @@ export function Library() {
     'todos'
   )
   const [platformFilter, setPlatformFilter] = useState<string>('todas')
+  const [search, setSearch] = useState('')
 
   const platforms = useMemo(() => {
-    const set = new Set(games.map((g) => g.platform).filter(Boolean) as string[])
+    const set = new Set(games.flatMap((g) => parseTags(g.platform)))
     return ['todas', ...Array.from(set)]
   }, [games])
 
   const filtered = games.filter((g) => {
     const matchesStatus = statusFilter === 'todos' || g.status === statusFilter
     const matchesPlatform =
-      platformFilter === 'todas' || g.platform === platformFilter
-    return matchesStatus && matchesPlatform
+      platformFilter === 'todas' || parseTags(g.platform).includes(platformFilter)
+    const matchesSearch =
+      search.trim() === '' ||
+      g.title.toLowerCase().includes(search.trim().toLowerCase())
+    return matchesStatus && matchesPlatform && matchesSearch
   })
 
   return (
     <div className="mx-auto max-w-md px-4 pb-24 pt-6">
       <h1 className="mb-4 text-xl font-semibold">Mi biblioteca</h1>
+
+      <input
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Buscar por título..."
+        className="mb-3 w-full rounded-md bg-slate-900 px-3 py-2 text-sm text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600"
+      />
 
       <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
         {statusFilters.map((s) => (

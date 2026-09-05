@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useGames } from '../hooks/useGames'
+import { usePlaySessions } from '../hooks/usePlaySessions'
+import { StarRating } from '../components/StarRating'
+import { TagList } from '../components/TagList'
 import type { Game, GameStatus } from '../types/game'
 
 const statuses: GameStatus[] = [
@@ -11,15 +14,24 @@ const statuses: GameStatus[] = [
   'en_pausa',
 ]
 
+function todayISO() {
+  return new Date().toISOString().slice(0, 10)
+}
+
 export function GameDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { games, loading, updateGame, deleteGame } = useGames()
   const game = games.find((g) => g.id === id)
+  const { sessions, addSession, deleteSession } = usePlaySessions(game?.id)
 
   const [form, setForm] = useState<Partial<Game> | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const [sessionMinutes, setSessionMinutes] = useState('')
+  const [sessionDate, setSessionDate] = useState(todayISO())
+  const [sessionError, setSessionError] = useState<string | null>(null)
 
   const current = form ?? game
 
@@ -42,6 +54,33 @@ export function GameDetail() {
     if (!confirm(`¿Eliminar "${game.title}" de tu biblioteca?`)) return
     await deleteGame(game.id)
     navigate('/')
+  }
+
+  async function handleAddSession() {
+    if (!game) return
+    const minutes = Number(sessionMinutes)
+    if (!minutes || minutes <= 0) {
+      setSessionError('Ingresá una duración válida en minutos')
+      return
+    }
+    setSessionError(null)
+    try {
+      await addSession(minutes, new Date(sessionDate).toISOString())
+      await updateGame(game.id, {
+        hours_played: Math.round((game.hours_played + minutes / 60) * 10) / 10,
+      })
+      setSessionMinutes('')
+    } catch (err) {
+      setSessionError(err instanceof Error ? err.message : 'Error al guardar la sesión')
+    }
+  }
+
+  async function handleDeleteSession(sessionId: string, minutes: number) {
+    if (!game) return
+    await deleteSession(sessionId)
+    await updateGame(game.id, {
+      hours_played: Math.max(0, Math.round((game.hours_played - minutes / 60) * 10) / 10),
+    })
   }
 
   if (loading) {
@@ -79,9 +118,14 @@ export function GameDetail() {
         </div>
         <div className="min-w-0">
           <h1 className="text-xl font-semibold">{game.title}</h1>
-          {game.genre && <p className="text-sm text-slate-400">{game.genre}</p>}
+          <div className="mt-1">
+            <TagList value={game.genre} />
+          </div>
+          <div className="mt-1">
+            <TagList value={game.platform} />
+          </div>
           {game.first_release_date && (
-            <p className="text-sm text-slate-500">
+            <p className="mt-1 text-sm text-slate-500">
               {new Date(game.first_release_date * 1000).getFullYear()}
             </p>
           )}
@@ -122,34 +166,49 @@ export function GameDetail() {
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1 block text-sm text-slate-400">Horas jugadas</label>
+            <label className="mb-1 block text-sm text-slate-400">Fecha inicio</label>
             <input
-              type="number"
-              min={0}
-              step="0.5"
-              value={current?.hours_played ?? 0}
+              type="date"
+              value={current?.date_started ?? ''}
               onChange={(e) =>
-                setForm({ ...(form ?? game), hours_played: Number(e.target.value) })
+                setForm({ ...(form ?? game), date_started: e.target.value || null })
               }
               className="w-full rounded-md bg-slate-900 px-3 py-2 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600"
             />
           </div>
           <div>
-            <label className="mb-1 block text-sm text-slate-400">Puntaje (1-10)</label>
+            <label className="mb-1 block text-sm text-slate-400">Fecha fin</label>
             <input
-              type="number"
-              min={1}
-              max={10}
-              value={current?.rating ?? ''}
+              type="date"
+              value={current?.date_finished ?? ''}
               onChange={(e) =>
-                setForm({
-                  ...(form ?? game),
-                  rating: e.target.value ? Number(e.target.value) : null,
-                })
+                setForm({ ...(form ?? game), date_finished: e.target.value || null })
               }
               className="w-full rounded-md bg-slate-900 px-3 py-2 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600"
             />
           </div>
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm text-slate-400">Horas jugadas</label>
+          <input
+            type="number"
+            min={0}
+            step="0.5"
+            value={current?.hours_played ?? 0}
+            onChange={(e) =>
+              setForm({ ...(form ?? game), hours_played: Number(e.target.value) })
+            }
+            className="w-full rounded-md bg-slate-900 px-3 py-2 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600"
+          />
+        </div>
+
+        <div>
+          <label className="mb-1 block text-sm text-slate-400">Puntaje</label>
+          <StarRating
+            value={current?.rating ?? null}
+            onChange={(rating) => setForm({ ...(form ?? game), rating })}
+          />
         </div>
 
         <div>
@@ -178,6 +237,60 @@ export function GameDetail() {
           >
             Eliminar
           </button>
+        </div>
+
+        <div className="border-t border-slate-800 pt-4">
+          <h2 className="mb-2 text-sm font-medium text-slate-300">
+            Sesiones de juego
+          </h2>
+
+          <div className="mb-3 flex gap-2">
+            <input
+              type="date"
+              value={sessionDate}
+              onChange={(e) => setSessionDate(e.target.value)}
+              className="w-36 rounded-md bg-slate-900 px-2 py-2 text-sm text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600"
+            />
+            <input
+              type="number"
+              min={1}
+              placeholder="Minutos"
+              value={sessionMinutes}
+              onChange={(e) => setSessionMinutes(e.target.value)}
+              className="flex-1 rounded-md bg-slate-900 px-3 py-2 text-sm text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600"
+            />
+            <button
+              type="button"
+              onClick={handleAddSession}
+              className="rounded-md bg-emerald-700 px-3 py-2 text-sm font-medium"
+            >
+              Agregar
+            </button>
+          </div>
+          {sessionError && <p className="mb-2 text-sm text-red-400">{sessionError}</p>}
+
+          {sessions.length === 0 ? (
+            <p className="text-sm text-slate-500">Todavía no registraste sesiones.</p>
+          ) : (
+            <ul className="flex flex-col gap-1.5">
+              {sessions.map((s) => (
+                <li
+                  key={s.id}
+                  className="flex items-center justify-between rounded-md bg-slate-900 px-3 py-2 text-sm ring-1 ring-slate-800"
+                >
+                  <span className="text-slate-300">
+                    {new Date(s.played_at).toLocaleDateString()} — {s.duration_minutes} min
+                  </span>
+                  <button
+                    onClick={() => handleDeleteSession(s.id, s.duration_minutes)}
+                    className="text-xs text-red-400"
+                  >
+                    Eliminar
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </div>
