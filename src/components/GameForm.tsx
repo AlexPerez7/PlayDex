@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { searchGames } from '../lib/igdb'
+import { igdbResultToNewGame, searchGames } from '../lib/igdb'
 import type { GameStatus, IgdbSearchResult, NewGame } from '../types/game'
 
 const statuses: GameStatus[] = [
@@ -47,16 +47,7 @@ export function GameForm({ onSubmit }: GameFormProps) {
   }
 
   function applyResult(result: IgdbSearchResult) {
-    setForm((prev) => ({
-      ...prev,
-      title: result.name,
-      cover_url: result.cover_url,
-      genre: result.genres.join(', '),
-      platform: result.platforms.join(', '),
-      summary: result.summary ?? '',
-      first_release_date: result.first_release_date ?? undefined,
-      igdb_id: result.id,
-    }))
+    setForm((prev) => ({ ...prev, ...igdbResultToNewGame(result) }))
     setResults([])
     setQuery(result.name)
   }

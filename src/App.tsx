@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 import { BottomNav } from './components/BottomNav'
+import { Home } from './pages/Home'
 import { Library } from './pages/Library'
 import { AddGame } from './pages/AddGame'
 import { Dashboard } from './pages/Dashboard'
@@ -26,6 +27,7 @@ function App() {
     <div className="min-h-screen">
       <Routes>
         <Route path="/" element={<Library />} />
+        <Route path="/home" element={<Home />} />
         <Route path="/add" element={<AddGame />} />
         <Route path="/game/:id" element={<GameDetail />} />
         <Route path="/dashboard" element={<Dashboard />} />

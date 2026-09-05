@@ -62,19 +62,29 @@ serve(async (req) => {
   }
 
   try {
-    const { query } = await req.json()
-    if (!query || typeof query !== 'string') {
-      return new Response(JSON.stringify({ error: 'Falta el parámetro query' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+    const { query, mode } = await req.json()
+
+    let body: string
+    if (mode === 'popular') {
+      // Juegos con mas "hype" lanzados en los ultimos ~2 anos, como proxy de popularidad actual
+      const twoYearsAgo = Math.floor(Date.now() / 1000) - 2 * 365 * 24 * 60 * 60
+      body = `fields name, cover.url, genres.name, platforms.name, first_release_date, summary, hypes;
+sort hypes desc;
+where hypes != null & first_release_date > ${twoYearsAgo};
+limit 10;`
+    } else {
+      if (!query || typeof query !== 'string') {
+        return new Response(JSON.stringify({ error: 'Falta el parámetro query' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      body = `search "${query.replace(/"/g, '\\"')}";
+fields name, cover.url, genres.name, platforms.name, first_release_date, summary;
+limit 10;`
     }
 
     const token = await getAccessToken()
-
-    const body = `search "${query.replace(/"/g, '\\"')}";
-fields name, cover.url, genres.name, platforms.name, first_release_date, summary;
-limit 10;`
 
     const igdbRes = await fetch('https://api.igdb.com/v4/games', {
       method: 'POST',
