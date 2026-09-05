@@ -4,6 +4,7 @@ import { BottomNav } from './components/BottomNav'
 import { Library } from './pages/Library'
 import { AddGame } from './pages/AddGame'
 import { Dashboard } from './pages/Dashboard'
+import { GameDetail } from './pages/GameDetail'
 import { Login } from './pages/Login'
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Library />} />
         <Route path="/add" element={<AddGame />} />
+        <Route path="/game/:id" element={<GameDetail />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

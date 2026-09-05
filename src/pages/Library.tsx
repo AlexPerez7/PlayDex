@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useGames } from '../hooks/useGames'
 import { GameCard } from '../components/GameCard'
 import type { GameStatus } from '../types/game'
@@ -13,6 +14,7 @@ const statusFilters: Array<GameStatus | 'todos'> = [
 ]
 
 export function Library() {
+  const navigate = useNavigate()
   const { games, loading, error } = useGames()
   const [statusFilter, setStatusFilter] = useState<GameStatus | 'todos'>(
     'todos'
@@ -76,7 +78,11 @@ export function Library() {
 
       <div className="flex flex-col gap-2">
         {filtered.map((game) => (
-          <GameCard key={game.id} game={game} />
+          <GameCard
+            key={game.id}
+            game={game}
+            onClick={(g) => navigate(`/game/${g.id}`)}
+          />
         ))}
       </div>
     </div>
