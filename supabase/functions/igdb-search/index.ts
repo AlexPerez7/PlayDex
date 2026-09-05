@@ -51,6 +51,18 @@ interface IgdbGame {
   summary?: string
 }
 
+function mapGames(games: IgdbGame[]) {
+  return games.map((g) => ({
+    id: g.id,
+    name: g.name,
+    cover_url: g.cover?.url ? `https:${g.cover.url.replace('t_thumb', 't_cover_big')}` : null,
+    genres: g.genres?.map((genre) => genre.name) ?? [],
+    platforms: g.platforms?.map((p) => p.name) ?? [],
+    first_release_date: g.first_release_date ?? null,
+    summary: g.summary ?? null,
+  }))
+}
+
 serve(async (req) => {
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -64,27 +76,43 @@ serve(async (req) => {
   try {
     const { query, mode } = await req.json()
 
-    let body: string
     if (mode === 'popular') {
-      // Juegos con mas "hype" lanzados en los ultimos ~2 anos, como proxy de popularidad actual
       const twoYearsAgo = Math.floor(Date.now() / 1000) - 2 * 365 * 24 * 60 * 60
-      body = `fields name, cover.url, genres.name, platforms.name, first_release_date, summary, hypes;
+      const token = await getAccessToken()
+      const igdbRes = await fetch('https://api.igdb.com/v4/games', {
+        method: 'POST',
+        headers: {
+          'Client-ID': TWITCH_CLIENT_ID,
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'text/plain',
+        },
+        body: `fields name, cover.url, genres.name, platforms.name, first_release_date, summary, hypes;
 sort hypes desc;
 where hypes != null & first_release_date > ${twoYearsAgo};
-limit 10;`
-    } else {
-      if (!query || typeof query !== 'string') {
-        return new Response(JSON.stringify({ error: 'Falta el parámetro query' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
+limit 10;`,
+      })
+      if (!igdbRes.ok) {
+        const text = await igdbRes.text()
+        throw new Error(`Error de IGDB (${igdbRes.status}): ${text}`)
       }
-      body = `search "${query.replace(/"/g, '\\"')}";
-fields name, cover.url, genres.name, platforms.name, first_release_date, summary;
-limit 10;`
+      const popularGames: IgdbGame[] = await igdbRes.json()
+      return new Response(JSON.stringify(mapGames(popularGames)), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (!query || typeof query !== 'string') {
+      return new Response(JSON.stringify({ error: 'Falta el parámetro query' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     const token = await getAccessToken()
+
+    const body = `search "${query.replace(/"/g, '\\"')}";
+fields name, cover.url, genres.name, platforms.name, first_release_date, summary;
+limit 10;`
 
     const igdbRes = await fetch('https://api.igdb.com/v4/games', {
       method: 'POST',
@@ -103,17 +131,7 @@ limit 10;`
 
     const games: IgdbGame[] = await igdbRes.json()
 
-    const results = games.map((g) => ({
-      id: g.id,
-      name: g.name,
-      cover_url: g.cover?.url ? `https:${g.cover.url.replace('t_thumb', 't_cover_big')}` : null,
-      genres: g.genres?.map((genre) => genre.name) ?? [],
-      platforms: g.platforms?.map((p) => p.name) ?? [],
-      first_release_date: g.first_release_date ?? null,
-      summary: g.summary ?? null,
-    }))
-
-    return new Response(JSON.stringify(results), {
+    return new Response(JSON.stringify(mapGames(games)), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (err) {
