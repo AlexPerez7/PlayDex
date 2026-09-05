@@ -80,8 +80,17 @@ export function GameDetail() {
         <div className="min-w-0">
           <h1 className="text-xl font-semibold">{game.title}</h1>
           {game.genre && <p className="text-sm text-slate-400">{game.genre}</p>}
+          {game.first_release_date && (
+            <p className="text-sm text-slate-500">
+              {new Date(game.first_release_date * 1000).getFullYear()}
+            </p>
+          )}
         </div>
       </div>
+
+      {game.summary && (
+        <p className="mb-4 text-sm text-slate-400">{game.summary}</p>
+      )}
 
       <div className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-3">

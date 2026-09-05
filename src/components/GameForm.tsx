@@ -28,6 +28,8 @@ export function GameForm({ onSubmit }: GameFormProps) {
     genre: '',
     cover_url: '',
     igdb_id: undefined,
+    summary: '',
+    first_release_date: undefined,
   })
 
   async function handleSearch() {
@@ -49,7 +51,10 @@ export function GameForm({ onSubmit }: GameFormProps) {
       ...prev,
       title: result.name,
       cover_url: result.cover_url,
-      genre: result.genres[0] ?? '',
+      genre: result.genres.join(', '),
+      platform: result.platforms.join(', '),
+      summary: result.summary ?? '',
+      first_release_date: result.first_release_date ?? undefined,
       igdb_id: result.id,
     }))
     setResults([])
@@ -70,6 +75,8 @@ export function GameForm({ onSubmit }: GameFormProps) {
         genre: '',
         cover_url: '',
         igdb_id: undefined,
+        summary: '',
+        first_release_date: undefined,
       })
       setQuery('')
     } catch (err) {
