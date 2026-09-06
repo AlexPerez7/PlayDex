@@ -33,6 +33,7 @@ export function GameCard({ game, onClick }: GameCardProps) {
           <img
             src={game.cover_url}
             alt={game.title}
+            loading="lazy"
             className="h-full w-full object-cover"
           />
         ) : (

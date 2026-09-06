@@ -26,9 +26,11 @@ export function GameDetail() {
   const navigate = useNavigate()
   const { games, loading, updateGame, deleteGame } = useGames()
   const game = games.find((g) => g.id === id)
-  const { sessions, addSession, deleteSession } = usePlaySessions(game?.id)
+  // Se pasa el id de la URL (no game?.id) para que estas consultas no
+  // esperen a que termine de cargar toda la biblioteca antes de arrancar.
+  const { sessions, addSession, deleteSession } = usePlaySessions(id)
   const { lists } = useLists()
-  const { listIds, toggle: toggleList } = useGameListIds(game?.id)
+  const { listIds, toggle: toggleList } = useGameListIds(id)
 
   const [form, setForm] = useState<Partial<Game> | null>(null)
   const [saving, setSaving] = useState(false)
@@ -62,7 +64,7 @@ export function GameDetail() {
   }
 
   async function handleAddSession() {
-    if (!game) return
+    if (!game || !current) return
     const minutes = Number(sessionMinutes)
     if (!minutes || minutes <= 0) {
       setSessionError('Ingresa una duración válida en minutos')
@@ -71,9 +73,9 @@ export function GameDetail() {
     setSessionError(null)
     try {
       await addSession(minutes, new Date(sessionDate).toISOString())
-      await updateGame(game.id, {
-        hours_played: Math.round((game.hours_played + minutes / 60) * 10) / 10,
-      })
+      const hours_played = Math.round(((current.hours_played ?? 0) + minutes / 60) * 10) / 10
+      await updateGame(game.id, { hours_played })
+      setForm({ ...current, hours_played })
       setSessionMinutes('')
     } catch (err) {
       setSessionError(err instanceof Error ? err.message : 'Error al guardar la sesión')
@@ -81,11 +83,11 @@ export function GameDetail() {
   }
 
   async function handleDeleteSession(sessionId: string, minutes: number) {
-    if (!game) return
+    if (!game || !current) return
     await deleteSession(sessionId)
-    await updateGame(game.id, {
-      hours_played: Math.max(0, Math.round((game.hours_played - minutes / 60) * 10) / 10),
-    })
+    const hours_played = Math.max(0, Math.round(((current.hours_played ?? 0) - minutes / 60) * 10) / 10)
+    await updateGame(game.id, { hours_played })
+    setForm({ ...current, hours_played })
   }
 
   if (loading) {

@@ -124,6 +124,7 @@ export function Home() {
                   <img
                     src={result.cover_url}
                     alt={result.name}
+                    loading="lazy"
                     className="h-full w-full object-cover"
                   />
                 ) : (
