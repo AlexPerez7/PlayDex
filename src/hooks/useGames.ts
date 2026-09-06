@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { supabase } from '../lib/supabaseClient'
+import { supabase, ensureSession } from '../lib/supabaseClient'
 import type { Game, NewGame } from '../types/game'
 
 export function useGames() {
@@ -9,6 +9,7 @@ export function useGames() {
 
   const fetchGames = useCallback(async () => {
     setLoading(true)
+    await ensureSession()
     const { data, error } = await supabase
       .from('games')
       .select('*')

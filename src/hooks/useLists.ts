@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { supabase } from '../lib/supabaseClient'
+import { supabase, ensureSession } from '../lib/supabaseClient'
 import type { GameList } from '../types/game'
 
 export function useLists() {
@@ -8,6 +8,7 @@ export function useLists() {
 
   const fetchLists = useCallback(async () => {
     setLoading(true)
+    await ensureSession()
     const { data, error } = await supabase
       .from('lists')
       .select('*')
@@ -54,6 +55,7 @@ export function useGameListIds(gameId: string | undefined) {
   const fetchListIds = useCallback(async () => {
     if (!gameId) return
     setLoading(true)
+    await ensureSession()
     const { data, error } = await supabase
       .from('list_games')
       .select('list_id')
@@ -103,6 +105,7 @@ export function useListGameIds(listId: string | undefined) {
   const fetchGameIds = useCallback(async () => {
     if (!listId) return
     setLoading(true)
+    await ensureSession()
     const { data, error } = await supabase
       .from('list_games')
       .select('game_id')

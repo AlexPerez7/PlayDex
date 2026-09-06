@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabaseClient'
+import { supabase, ensureSession } from '../lib/supabaseClient'
 import { useGames } from '../hooks/useGames'
 import { PageContainer } from '../components/PageContainer'
 
@@ -26,15 +26,17 @@ export function Timeline() {
   const [loadingSessions, setLoadingSessions] = useState(true)
 
   useEffect(() => {
-    supabase
-      .from('play_sessions')
-      .select('id, duration_minutes, played_at, game_id, games(title)')
-      .order('played_at', { ascending: false })
-      .limit(50)
-      .then(({ data }) => {
-        setSessions((data as unknown as SessionRow[]) ?? [])
-        setLoadingSessions(false)
-      })
+    ensureSession().then(() => {
+      supabase
+        .from('play_sessions')
+        .select('id, duration_minutes, played_at, game_id, games(title)')
+        .order('played_at', { ascending: false })
+        .limit(50)
+        .then(({ data }) => {
+          setSessions((data as unknown as SessionRow[]) ?? [])
+          setLoadingSessions(false)
+        })
+    })
   }, [])
 
   const loading = loadingGames || loadingSessions
