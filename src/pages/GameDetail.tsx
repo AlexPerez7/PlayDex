@@ -5,6 +5,7 @@ import { usePlaySessions } from '../hooks/usePlaySessions'
 import { useLists, useGameListIds } from '../hooks/useLists'
 import { StarRating } from '../components/StarRating'
 import { TagList } from '../components/TagList'
+import { PlatformPicker } from '../components/PlatformPicker'
 import { PageContainer } from '../components/PageContainer'
 import type { Game, GameStatus } from '../types/game'
 
@@ -142,31 +143,29 @@ export function GameDetail() {
         )}
 
         <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1 block text-sm text-slate-400">Plataforma</label>
-              <input
-                value={current?.platform ?? ''}
-                onChange={(e) => setForm({ ...(form ?? game), platform: e.target.value })}
-                className="w-full rounded-md bg-slate-900 px-3 py-2 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm text-slate-400">Estado</label>
-              <select
-                value={current?.status}
-                onChange={(e) =>
-                  setForm({ ...(form ?? game), status: e.target.value as GameStatus })
-                }
-                className="w-full rounded-md bg-slate-900 px-3 py-2 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600"
-              >
-                {statuses.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <div>
+            <label className="mb-1 block text-sm text-slate-400">Plataforma(s)</label>
+            <PlatformPicker
+              value={current?.platform}
+              onChange={(platform) => setForm({ ...(form ?? game), platform })}
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-sm text-slate-400">Estado</label>
+            <select
+              value={current?.status}
+              onChange={(e) =>
+                setForm({ ...(form ?? game), status: e.target.value as GameStatus })
+              }
+              className="w-full rounded-md bg-slate-900 px-3 py-2 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600"
+            >
+              {statuses.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="grid grid-cols-2 gap-3">

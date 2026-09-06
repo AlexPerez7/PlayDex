@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { igdbResultToNewGame, searchGames } from '../lib/igdb'
+import { PlatformPicker } from './PlatformPicker'
 import type { GameStatus, IgdbSearchResult, NewGame } from '../types/game'
 
 const statuses: GameStatus[] = [
@@ -149,33 +150,31 @@ export function GameForm({ onSubmit, existingIgdbIds }: GameFormProps) {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="mb-1 block text-sm text-slate-400">
-            Plataforma
-          </label>
-          <input
-            value={form.platform ?? ''}
-            onChange={(e) => setForm({ ...form, platform: e.target.value })}
-            className="w-full rounded-md bg-slate-900 px-3 py-2 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600"
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-sm text-slate-400">Estado</label>
-          <select
-            value={form.status}
-            onChange={(e) =>
-              setForm({ ...form, status: e.target.value as GameStatus })
-            }
-            className="w-full rounded-md bg-slate-900 px-3 py-2 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600"
-          >
-            {statuses.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </div>
+      <div>
+        <label className="mb-1 block text-sm text-slate-400">
+          Plataforma(s)
+        </label>
+        <PlatformPicker
+          value={form.platform}
+          onChange={(platform) => setForm({ ...form, platform })}
+        />
+      </div>
+
+      <div>
+        <label className="mb-1 block text-sm text-slate-400">Estado</label>
+        <select
+          value={form.status}
+          onChange={(e) =>
+            setForm({ ...form, status: e.target.value as GameStatus })
+          }
+          className="w-full rounded-md bg-slate-900 px-3 py-2 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600"
+        >
+          {statuses.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div>
