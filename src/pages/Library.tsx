@@ -5,6 +5,7 @@ import { GameCard } from '../components/GameCard'
 import { GameCardGridSkeleton } from '../components/Skeleton'
 import { PageContainer } from '../components/PageContainer'
 import { parseTags } from '../lib/tags'
+import { statusLabels } from '../lib/status'
 import type { GameStatus } from '../types/game'
 
 const statusFilters: Array<GameStatus | 'todos'> = [
@@ -16,13 +17,48 @@ const statusFilters: Array<GameStatus | 'todos'> = [
   'en_pausa',
 ]
 
+function statusFilterLabel(s: GameStatus | 'todos') {
+  return s === 'todos' ? 'Todos' : statusLabels[s]
+}
+
 type SortOption = 'recientes' | 'titulo' | 'horas' | 'puntaje'
 
 const sortLabels: Record<SortOption, string> = {
-  recientes: 'Recién agregados',
-  titulo: 'Título (A-Z)',
-  horas: 'Más horas jugadas',
-  puntaje: 'Mejor puntuados',
+  recientes: 'Recientes',
+  titulo: 'Título A-Z',
+  horas: 'Más horas',
+  puntaje: 'Mejor puntaje',
+}
+
+function ChipRow<T extends string>({
+  options,
+  value,
+  onChange,
+  labelFor,
+}: {
+  options: T[]
+  value: T
+  onChange: (v: T) => void
+  labelFor: (v: T) => string
+}) {
+  return (
+    <div className="flex gap-2 overflow-x-auto pb-1">
+      {options.map((opt) => (
+        <button
+          key={opt}
+          type="button"
+          onClick={() => onChange(opt)}
+          className={`whitespace-nowrap rounded-full px-3 py-1 text-xs ${
+            value === opt
+              ? 'bg-emerald-600 text-slate-950'
+              : 'bg-slate-900 text-slate-400 ring-1 ring-slate-800'
+          }`}
+        >
+          {labelFor(opt)}
+        </button>
+      ))}
+    </div>
+  )
 }
 
 export function Library() {
@@ -67,56 +103,50 @@ export function Library() {
     <PageContainer>
       <h1 className="mb-4 text-xl font-semibold">Mi biblioteca</h1>
 
-      <div className="md:flex md:items-start md:gap-3">
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Buscar por título..."
-          className="mb-3 w-full rounded-md bg-slate-900 px-3 py-2 text-sm text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600 md:mb-0 md:max-w-xs"
+      <input
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        placeholder="Buscar por título..."
+        className="mb-4 w-full rounded-md bg-slate-900 px-3 py-2.5 text-sm text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 md:max-w-xs"
+      />
+
+      <div className="mb-3">
+        <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">
+          Estado
+        </p>
+        <ChipRow
+          options={statusFilters}
+          value={statusFilter}
+          onChange={setStatusFilter}
+          labelFor={statusFilterLabel}
         />
+      </div>
 
-        {platforms.length > 1 && (
-          <select
+      {platforms.length > 1 && (
+        <div className="mb-3">
+          <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">
+            Plataforma
+          </p>
+          <ChipRow
+            options={platforms}
             value={platformFilter}
-            onChange={(e) => setPlatformFilter(e.target.value)}
-            className="mb-4 w-full rounded-md bg-slate-900 px-3 py-2 text-sm text-slate-100 ring-1 ring-slate-800 md:mb-0 md:w-auto"
-          >
-            {platforms.map((p) => (
-              <option key={p} value={p}>
-                {p}
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
+            onChange={setPlatformFilter}
+            labelFor={(p) => p}
+          />
+        </div>
+      )}
 
-      <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
-        {statusFilters.map((s) => (
-          <button
-            key={s}
-            onClick={() => setStatusFilter(s)}
-            className={`whitespace-nowrap rounded-full px-3 py-1 text-xs ${
-              statusFilter === s
-                ? 'bg-emerald-600 text-slate-950'
-                : 'bg-slate-900 text-slate-400'
-            }`}
-          >
-            {s}
-          </button>
-        ))}
+      <div className="mb-4">
+        <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">
+          Ordenar
+        </p>
+        <ChipRow
+          options={Object.keys(sortLabels) as SortOption[]}
+          value={sortBy}
+          onChange={setSortBy}
+          labelFor={(s) => sortLabels[s]}
+        />
       </div>
-
-      <select
-        value={sortBy}
-        onChange={(e) => setSortBy(e.target.value as SortOption)}
-        className="mb-4 w-full rounded-md bg-slate-900 px-3 py-2 text-sm text-slate-100 ring-1 ring-slate-800 md:w-auto"
-      >
-        {Object.entries(sortLabels).map(([value, label]) => (
-          <option key={value} value={value}>
-            Ordenar: {label}
-          </option>
-        ))}
-      </select>
 
       {error && <p className="text-sm text-red-400">{error}</p>}
 

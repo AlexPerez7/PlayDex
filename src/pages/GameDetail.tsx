@@ -6,17 +6,10 @@ import { useLists, useGameListIds } from '../hooks/useLists'
 import { StarRating } from '../components/StarRating'
 import { TagList } from '../components/TagList'
 import { PlatformPicker } from '../components/PlatformPicker'
+import { StatusPicker } from '../components/StatusPicker'
 import { Skeleton } from '../components/Skeleton'
 import { PageContainer } from '../components/PageContainer'
-import type { Game, GameStatus } from '../types/game'
-
-const statuses: GameStatus[] = [
-  'pendiente',
-  'jugando',
-  'completado',
-  'abandonado',
-  'en_pausa',
-]
+import type { Game } from '../types/game'
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10)
@@ -157,9 +150,11 @@ export function GameDetail() {
           <p className="mb-4 text-sm text-slate-400">{game.summary}</p>
         )}
 
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-5">
           <div>
-            <label className="mb-1 block text-sm text-slate-400">Plataforma(s)</label>
+            <label className="mb-1.5 block text-sm font-medium text-slate-300">
+              Plataforma(s)
+            </label>
             <PlatformPicker
               value={current?.platform}
               onChange={(platform) => setForm({ ...(form ?? game), platform })}
@@ -167,89 +162,90 @@ export function GameDetail() {
           </div>
 
           <div>
-            <label className="mb-1 block text-sm text-slate-400">Estado</label>
-            <select
-              value={current?.status}
-              onChange={(e) =>
-                setForm({ ...(form ?? game), status: e.target.value as GameStatus })
-              }
-              className="w-full rounded-md bg-slate-900 px-3 py-2 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600"
-            >
-              {statuses.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
+            <label className="mb-1.5 block text-sm font-medium text-slate-300">Estado</label>
+            <StatusPicker
+              value={current?.status ?? 'pendiente'}
+              onChange={(status) => setForm({ ...(form ?? game), status })}
+            />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1 block text-sm text-slate-400">Fecha inicio</label>
-              <input
-                type="date"
-                value={current?.date_started ?? ''}
-                onChange={(e) =>
-                  setForm({ ...(form ?? game), date_started: e.target.value || null })
-                }
-                className="w-full rounded-md bg-slate-900 px-3 py-2 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600"
-              />
+          <div className="border-t border-slate-800 pt-5">
+            <h2 className="mb-3 text-sm font-medium text-slate-300">Tu progreso</h2>
+            <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-sm text-slate-400">Fecha inicio</label>
+                  <input
+                    type="date"
+                    value={current?.date_started ?? ''}
+                    onChange={(e) =>
+                      setForm({ ...(form ?? game), date_started: e.target.value || null })
+                    }
+                    className="w-full rounded-md bg-slate-900 px-3 py-2.5 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm text-slate-400">Fecha fin</label>
+                  <input
+                    type="date"
+                    value={current?.date_finished ?? ''}
+                    onChange={(e) =>
+                      setForm({ ...(form ?? game), date_finished: e.target.value || null })
+                    }
+                    className="w-full rounded-md bg-slate-900 px-3 py-2.5 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm text-slate-400">Horas jugadas</label>
+                <input
+                  type="number"
+                  min={0}
+                  step="0.5"
+                  value={current?.hours_played ?? 0}
+                  onChange={(e) =>
+                    setForm({ ...(form ?? game), hours_played: Number(e.target.value) })
+                  }
+                  className="w-full rounded-md bg-slate-900 px-3 py-2.5 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm text-slate-400">Puntaje</label>
+                <StarRating
+                  value={current?.rating ?? null}
+                  onChange={(rating) => setForm({ ...(form ?? game), rating })}
+                />
+              </div>
             </div>
-            <div>
-              <label className="mb-1 block text-sm text-slate-400">Fecha fin</label>
-              <input
-                type="date"
-                value={current?.date_finished ?? ''}
-                onChange={(e) =>
-                  setForm({ ...(form ?? game), date_finished: e.target.value || null })
-                }
-                className="w-full rounded-md bg-slate-900 px-3 py-2 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600"
-              />
+          </div>
+
+          <div className="border-t border-slate-800 pt-5">
+            <h2 className="mb-3 text-sm font-medium text-slate-300">Notas y reseña</h2>
+            <div className="flex flex-col gap-4">
+              <div>
+                <label className="mb-1 block text-sm text-slate-400">Notas</label>
+                <textarea
+                  value={current?.notes ?? ''}
+                  onChange={(e) => setForm({ ...(form ?? game), notes: e.target.value })}
+                  rows={3}
+                  placeholder="Notas de progreso, spoilers, pendientes..."
+                  className="w-full rounded-md bg-slate-900 px-3 py-2.5 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-sm text-slate-400">Reseña</label>
+                <textarea
+                  value={current?.review ?? ''}
+                  onChange={(e) => setForm({ ...(form ?? game), review: e.target.value })}
+                  rows={4}
+                  placeholder="Tu opinión sobre el juego..."
+                  className="w-full rounded-md bg-slate-900 px-3 py-2.5 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                />
+              </div>
             </div>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm text-slate-400">Horas jugadas</label>
-            <input
-              type="number"
-              min={0}
-              step="0.5"
-              value={current?.hours_played ?? 0}
-              onChange={(e) =>
-                setForm({ ...(form ?? game), hours_played: Number(e.target.value) })
-              }
-              className="w-full rounded-md bg-slate-900 px-3 py-2 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm text-slate-400">Puntaje</label>
-            <StarRating
-              value={current?.rating ?? null}
-              onChange={(rating) => setForm({ ...(form ?? game), rating })}
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm text-slate-400">Notas</label>
-            <textarea
-              value={current?.notes ?? ''}
-              onChange={(e) => setForm({ ...(form ?? game), notes: e.target.value })}
-              rows={3}
-              placeholder="Notas de progreso, spoilers, pendientes..."
-              className="w-full rounded-md bg-slate-900 px-3 py-2 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600"
-            />
-          </div>
-
-          <div>
-            <label className="mb-1 block text-sm text-slate-400">Reseña</label>
-            <textarea
-              value={current?.review ?? ''}
-              onChange={(e) => setForm({ ...(form ?? game), review: e.target.value })}
-              rows={4}
-              placeholder="Tu opinión sobre el juego..."
-              className="w-full rounded-md bg-slate-900 px-3 py-2 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600"
-            />
           </div>
 
           {error && <p className="text-sm text-red-400">{error}</p>}
@@ -258,13 +254,13 @@ export function GameDetail() {
             <button
               onClick={handleSave}
               disabled={saving || !form}
-              className="flex-1 rounded-md bg-emerald-600 py-2.5 font-medium text-slate-950 disabled:opacity-50"
+              className="flex-1 rounded-md bg-emerald-600 py-3 font-medium text-slate-950 disabled:opacity-40"
             >
               {saving ? 'Guardando...' : 'Guardar cambios'}
             </button>
             <button
               onClick={handleDelete}
-              className="rounded-md bg-red-900 px-4 py-2.5 text-sm font-medium text-red-100"
+              className="rounded-md bg-red-900 px-4 py-3 text-sm font-medium text-red-100"
             >
               Eliminar
             </button>
