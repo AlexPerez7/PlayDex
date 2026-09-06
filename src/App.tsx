@@ -1,5 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
+import { GamesProvider } from './contexts/GamesContext'
+import { ListsProvider } from './contexts/ListsContext'
 import { BottomNav } from './components/BottomNav'
 import { Home } from './pages/Home'
 import { Library } from './pages/Library'
@@ -27,20 +29,24 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen">
-      <Routes>
-        <Route path="/" element={<Library />} />
-        <Route path="/home" element={<Home />} />
-        <Route path="/add" element={<AddGame />} />
-        <Route path="/game/:id" element={<GameDetail />} />
-        <Route path="/lists" element={<Lists />} />
-        <Route path="/lists/:id" element={<ListDetail />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/timeline" element={<Timeline />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-      <BottomNav />
-    </div>
+    <GamesProvider>
+      <ListsProvider>
+        <div className="min-h-screen">
+          <Routes>
+            <Route path="/" element={<Library />} />
+            <Route path="/home" element={<Home />} />
+            <Route path="/add" element={<AddGame />} />
+            <Route path="/game/:id" element={<GameDetail />} />
+            <Route path="/lists" element={<Lists />} />
+            <Route path="/lists/:id" element={<ListDetail />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/timeline" element={<Timeline />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+          <BottomNav />
+        </div>
+      </ListsProvider>
+    </GamesProvider>
   )
 }
 

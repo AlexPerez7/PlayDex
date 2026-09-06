@@ -1,52 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase, ensureSession } from '../lib/supabaseClient'
-import type { GameList } from '../types/game'
 
-export function useLists() {
-  const [lists, setLists] = useState<GameList[]>([])
-  const [loading, setLoading] = useState(true)
-
-  const fetchLists = useCallback(async () => {
-    setLoading(true)
-    await ensureSession()
-    const { data, error } = await supabase
-      .from('lists')
-      .select('*')
-      .order('created_at', { ascending: false })
-
-    if (!error) setLists(data as GameList[])
-    setLoading(false)
-  }, [])
-
-  useEffect(() => {
-    fetchLists()
-  }, [fetchLists])
-
-  const createList = useCallback(async (name: string) => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) throw new Error('No hay sesión activa')
-
-    const { data, error } = await supabase
-      .from('lists')
-      .insert({ name, user_id: user.id })
-      .select()
-      .single()
-
-    if (error) throw error
-    setLists((prev) => [data as GameList, ...prev])
-    return data as GameList
-  }, [])
-
-  const deleteList = useCallback(async (id: string) => {
-    const { error } = await supabase.from('lists').delete().eq('id', id)
-    if (error) throw error
-    setLists((prev) => prev.filter((l) => l.id !== id))
-  }, [])
-
-  return { lists, loading, createList, deleteList, refetch: fetchLists }
-}
+// La lista de listas se comparte a nivel de app (ver ListsProvider).
+export { useLists } from '../contexts/ListsContext'
 
 export function useGameListIds(gameId: string | undefined) {
   const [listIds, setListIds] = useState<Set<string>>(new Set())

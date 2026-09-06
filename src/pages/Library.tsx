@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGames } from '../hooks/useGames'
 import { GameCard } from '../components/GameCard'
+import { GameCardGridSkeleton } from '../components/Skeleton'
 import { PageContainer } from '../components/PageContainer'
 import { parseTags } from '../lib/tags'
 import type { GameStatus } from '../types/game'
@@ -117,24 +118,29 @@ export function Library() {
         ))}
       </select>
 
-      {loading && <p className="text-sm text-slate-400">Cargando...</p>}
       {error && <p className="text-sm text-red-400">{error}</p>}
 
-      {!loading && sorted.length === 0 && (
-        <p className="mt-8 text-center text-sm text-slate-500">
-          No hay juegos que coincidan con el filtro.
-        </p>
-      )}
+      {loading ? (
+        <GameCardGridSkeleton />
+      ) : (
+        <>
+          {sorted.length === 0 && (
+            <p className="mt-8 text-center text-sm text-slate-500">
+              No hay juegos que coincidan con el filtro.
+            </p>
+          )}
 
-      <div className="flex flex-col gap-2 sm:grid sm:grid-cols-2 lg:grid-cols-3">
-        {sorted.map((game) => (
-          <GameCard
-            key={game.id}
-            game={game}
-            onClick={(g) => navigate(`/game/${g.id}`)}
-          />
-        ))}
-      </div>
+          <div className="flex flex-col gap-2 sm:grid sm:grid-cols-2 lg:grid-cols-3">
+            {sorted.map((game) => (
+              <GameCard
+                key={game.id}
+                game={game}
+                onClick={(g) => navigate(`/game/${g.id}`)}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </PageContainer>
   )
 }

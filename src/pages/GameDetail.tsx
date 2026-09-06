@@ -6,6 +6,7 @@ import { useLists, useGameListIds } from '../hooks/useLists'
 import { StarRating } from '../components/StarRating'
 import { TagList } from '../components/TagList'
 import { PlatformPicker } from '../components/PlatformPicker'
+import { Skeleton } from '../components/Skeleton'
 import { PageContainer } from '../components/PageContainer'
 import type { Game, GameStatus } from '../types/game'
 
@@ -93,7 +94,19 @@ export function GameDetail() {
   if (loading) {
     return (
       <PageContainer>
-        <p className="text-sm text-slate-400">Cargando...</p>
+        <Skeleton className="mb-4 h-4 w-16" />
+        <div className="mb-4 flex gap-3">
+          <Skeleton className="h-32 w-24 flex-shrink-0" />
+          <div className="min-w-0 flex-1 space-y-2 pt-1">
+            <Skeleton className="h-6 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+          </div>
+        </div>
+        <div className="space-y-3">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </div>
       </PageContainer>
     )
   }

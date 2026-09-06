@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLists } from '../hooks/useLists'
 import { PageContainer } from '../components/PageContainer'
+import { Skeleton } from '../components/Skeleton'
 
 export function Lists() {
   const navigate = useNavigate()
@@ -45,7 +46,13 @@ export function Lists() {
         </button>
       </div>
 
-      {loading && <p className="text-sm text-slate-400">Cargando...</p>}
+      {loading && (
+        <div className="flex flex-col gap-2 sm:grid sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-12 w-full" />
+          ))}
+        </div>
+      )}
 
       {!loading && lists.length === 0 && (
         <p className="mt-8 text-center text-sm text-slate-500">

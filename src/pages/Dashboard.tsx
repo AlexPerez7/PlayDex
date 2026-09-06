@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGames } from '../hooks/useGames'
 import { StatsCard } from '../components/StatsCard'
+import { StatsCardSkeleton } from '../components/Skeleton'
 import { PageContainer } from '../components/PageContainer'
 import { parseTags } from '../lib/tags'
 
@@ -57,7 +58,11 @@ export function Dashboard() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-slate-400">Cargando...</p>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <StatsCardSkeleton key={i} />
+          ))}
+        </div>
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">

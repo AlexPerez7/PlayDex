@@ -3,6 +3,7 @@ import { getPopularGames, igdbResultToNewGame } from '../lib/igdb'
 import { useGames } from '../hooks/useGames'
 import { PageContainer } from '../components/PageContainer'
 import { TagList } from '../components/TagList'
+import { PopularCardSkeleton } from '../components/Skeleton'
 import type { IgdbSearchResult } from '../types/game'
 
 const PULL_THRESHOLD = 60
@@ -108,11 +109,12 @@ export function Home() {
         Juegos con más repercusión salidos en los últimos 2 años
       </p>
 
-      {loading && <p className="text-sm text-slate-400">Cargando...</p>}
       {error && <p className="text-sm text-red-400">{error}</p>}
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-        {popular.map((result) => {
+        {loading &&
+          Array.from({ length: 8 }).map((_, i) => <PopularCardSkeleton key={i} />)}
+        {!loading && popular.map((result) => {
           const alreadyOwned = ownedIgdbIds.has(result.id)
           return (
             <div
