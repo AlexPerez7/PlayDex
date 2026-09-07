@@ -31,16 +31,16 @@ export function Onboarding({ onFinish }: { onFinish: () => void }) {
           className="h-24 w-24 rounded-3xl shadow-lg shadow-black/40"
         />
 
-        <p className="mt-6 text-sm text-slate-400">Bienvenido a</p>
-        <h1 className="text-4xl font-bold text-emerald-400">PlayDex</h1>
+        <p className="mt-6 text-sm text-lavender">Bienvenido a</p>
+        <h1 className="text-4xl font-bold text-accent">PlayDex</h1>
 
         <div className="mt-10 flex w-full max-w-sm flex-col gap-6">
           {features.map(({ Icon, title, description }) => (
             <div key={title} className="flex items-start gap-4">
-              <Icon className="mt-0.5 shrink-0 text-emerald-400" size={24} />
+              <Icon className="mt-0.5 shrink-0 text-accent" size={24} />
               <div>
-                <h2 className="font-semibold text-slate-100">{title}</h2>
-                <p className="mt-0.5 text-sm text-slate-400">{description}</p>
+                <h2 className="font-semibold text-ink">{title}</h2>
+                <p className="mt-0.5 text-sm text-lavender">{description}</p>
               </div>
             </div>
           ))}
@@ -50,7 +50,7 @@ export function Onboarding({ onFinish }: { onFinish: () => void }) {
       <button
         type="button"
         onClick={onFinish}
-        className="w-full max-w-sm self-center rounded-full bg-emerald-600 py-3.5 font-semibold text-slate-950"
+        className="w-full max-w-sm self-center rounded-full bg-primary py-3.5 font-semibold text-white"
       >
         Empezar
       </button>

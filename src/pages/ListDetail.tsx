@@ -18,16 +18,16 @@ export function ListDetail() {
 
   return (
     <PageContainer>
-      <button onClick={() => navigate('/lists')} className="mb-4 text-sm text-emerald-400">
+      <button onClick={() => navigate('/lists')} className="mb-4 text-sm text-accent">
         ← Mis listas
       </button>
 
       <h1 className="mb-4 text-xl font-semibold">{list?.name ?? 'Lista'}</h1>
 
-      {loading && <p className="text-sm text-slate-400">Cargando...</p>}
+      {loading && <p className="text-sm text-lavender">Cargando...</p>}
 
       {!loading && listGames.length === 0 && (
-        <p className="mt-8 text-center text-sm text-slate-500">
+        <p className="mt-8 text-center text-sm text-lavender">
           Esta lista todavía no tiene juegos. Agregalos desde el detalle de cada juego.
         </p>
       )}

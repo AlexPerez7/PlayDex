@@ -19,7 +19,7 @@ export function StatusPicker({ value, onChange }: StatusPickerProps) {
             className={`rounded-full px-3 py-1.5 text-sm transition-opacity ${
               active
                 ? statusColors[s]
-                : 'bg-slate-900 text-slate-500 ring-1 ring-slate-800'
+                : 'bg-background-surface text-lavender ring-1 ring-primary-dark/30'
             }`}
           >
             {statusLabels[s]}

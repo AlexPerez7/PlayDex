@@ -62,7 +62,7 @@ export function Dashboard() {
     <PageContainer>
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-semibold">Dashboard</h1>
-        <button onClick={() => navigate('/timeline')} className="text-sm text-emerald-400">
+        <button onClick={() => navigate('/timeline')} className="text-sm text-accent">
           Ver diario →
         </button>
       </div>
@@ -91,12 +91,12 @@ export function Dashboard() {
               {highlights.map((h) => (
                 <div
                   key={h.label}
-                  className="flex items-center justify-between gap-3 rounded-lg bg-slate-900 p-3 ring-1 ring-slate-800"
+                  className="flex items-center justify-between gap-3 rounded-lg bg-background-surface p-3 ring-1 ring-primary-dark/30"
                 >
-                  <span className="flex flex-shrink-0 items-center gap-1.5 text-sm text-slate-400">
+                  <span className="flex flex-shrink-0 items-center gap-1.5 text-sm text-lavender">
                     <h.icon size={16} /> {h.label}
                   </span>
-                  <span className="truncate text-sm font-medium text-slate-100">
+                  <span className="truncate text-sm font-medium text-ink">
                     {h.value}
                   </span>
                 </div>

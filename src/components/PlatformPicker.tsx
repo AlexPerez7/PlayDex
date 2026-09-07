@@ -29,8 +29,8 @@ export function PlatformPicker({ value, onChange }: PlatformPickerProps) {
             onClick={() => toggle(platform)}
             className={`rounded-full px-3 py-1 text-xs ${
               active
-                ? 'bg-emerald-600 text-slate-950'
-                : 'bg-slate-900 text-slate-400 ring-1 ring-slate-800'
+                ? 'bg-accent text-primary-darker'
+                : 'bg-background-surface text-lavender ring-1 ring-primary-dark/30'
             }`}
           >
             {active ? '✓ ' : ''}

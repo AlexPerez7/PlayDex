@@ -44,7 +44,7 @@ export function SteamCallback() {
       ? 'text-red-400'
       : status === 'warn'
         ? 'text-amber-400'
-        : 'text-slate-300'
+        : 'text-lavender'
 
   return (
     <PageContainer>
@@ -53,7 +53,7 @@ export function SteamCallback() {
         {status === 'error' && (
           <button
             onClick={() => navigate('/steam-import', { replace: true })}
-            className="mt-4 text-sm text-emerald-400"
+            className="mt-4 text-sm text-accent"
           >
             Volver
           </button>

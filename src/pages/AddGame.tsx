@@ -21,7 +21,7 @@ export function AddGame() {
     <PageContainer>
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-semibold">Agregar juego</h1>
-        <button onClick={() => navigate('/steam-import')} className="text-sm text-emerald-400">
+        <button onClick={() => navigate('/steam-import')} className="text-sm text-accent">
           Importar de Steam →
         </button>
       </div>

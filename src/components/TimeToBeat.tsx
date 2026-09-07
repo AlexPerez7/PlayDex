@@ -44,14 +44,14 @@ export function TimeToBeat({
         {items.map((i) => (
           <div
             key={i.label}
-            className="rounded-md bg-slate-900 p-2 text-center ring-1 ring-slate-800"
+            className="rounded-md bg-background-surface p-2 text-center ring-1 ring-primary-dark/30"
           >
-            <p className="text-sm font-medium text-slate-100">{i.hours}h</p>
-            <p className="text-xs text-slate-500">{i.label}</p>
+            <p className="text-sm font-medium text-ink">{i.hours}h</p>
+            <p className="text-xs text-lavender">{i.label}</p>
           </div>
         ))}
       </div>
-      <p className="mt-1 text-xs text-slate-500">
+      <p className="mt-1 text-xs text-lavender">
         Duración estimada vía IGDB
         {data.count > 0 && ` · ${data.count} registros`}
       </p>

@@ -35,12 +35,12 @@ export function Lists() {
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Nombre de la lista..."
-          className="min-w-0 flex-1 rounded-md bg-slate-900 px-3 py-2 text-sm text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600"
+          className="min-w-0 flex-1 rounded-md bg-background-surface px-3 py-2 text-sm text-ink ring-1 ring-primary-dark/30 focus:outline-none focus:ring-primary"
         />
         <button
           onClick={handleCreate}
           disabled={creating}
-          className="flex-shrink-0 rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium disabled:opacity-50"
+          className="flex-shrink-0 rounded-md bg-primary px-4 py-2 text-sm font-medium disabled:opacity-50"
         >
           Crear
         </button>
@@ -55,7 +55,7 @@ export function Lists() {
       )}
 
       {!loading && lists.length === 0 && (
-        <p className="mt-8 text-center text-sm text-slate-500">
+        <p className="mt-8 text-center text-sm text-lavender">
           Todavía no creaste ninguna lista.
         </p>
       )}
@@ -64,11 +64,11 @@ export function Lists() {
         {lists.map((list) => (
           <div
             key={list.id}
-            className="flex items-center justify-between gap-2 rounded-lg bg-slate-900 p-3 ring-1 ring-slate-800"
+            className="flex items-center justify-between gap-2 rounded-lg bg-background-surface p-3 ring-1 ring-primary-dark/30"
           >
             <button
               onClick={() => navigate(`/lists/${list.id}`)}
-              className="min-w-0 flex-1 truncate text-left text-sm font-medium text-slate-100"
+              className="min-w-0 flex-1 truncate text-left text-sm font-medium text-ink"
             >
               {list.name}
             </button>

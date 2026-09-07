@@ -16,8 +16,8 @@ import { GameThumb } from '../components/GameThumb'
 
 function PrivacyNote() {
   return (
-    <div className="rounded-lg bg-slate-900 p-3 text-xs leading-relaxed text-slate-400 ring-1 ring-slate-800">
-      <p className="mb-1 font-medium text-slate-300">Requisitos</p>
+    <div className="rounded-lg bg-background-surface p-3 text-xs leading-relaxed text-lavender ring-1 ring-primary-dark/30">
+      <p className="mb-1 font-medium text-lavender">Requisitos</p>
       <ul className="list-disc space-y-1 pl-4">
         <li>
           Tu perfil de Steam debe estar <strong>público</strong>: en Steam →
@@ -100,12 +100,12 @@ export function SteamImport() {
 
   return (
     <PageContainer>
-      <button onClick={() => navigate('/add')} className="mb-4 text-sm text-emerald-400">
+      <button onClick={() => navigate('/add')} className="mb-4 text-sm text-accent">
         ← Volver
       </button>
 
       <h1 className="mb-1 text-xl font-semibold">Importar de Steam</h1>
-      <p className="mb-4 text-sm text-slate-400">
+      <p className="mb-4 text-sm text-lavender">
         Vinculá tu cuenta de Steam para traer tus juegos con las horas jugadas reales.
       </p>
 
@@ -116,7 +116,7 @@ export function SteamImport() {
           <button
             onClick={handleConnect}
             disabled={connecting}
-            className="rounded-md bg-[#1b2838] px-4 py-3 text-sm font-medium text-white ring-1 ring-slate-700 disabled:opacity-50"
+            className="rounded-md bg-[#1b2838] px-4 py-3 text-sm font-medium text-white ring-1 ring-white/10 disabled:opacity-50"
           >
             {connecting ? 'Redirigiendo a Steam...' : 'Iniciar sesión con Steam'}
           </button>
@@ -127,7 +127,7 @@ export function SteamImport() {
       {/* --- Cuenta vinculada --- */}
       {profile && (
         <>
-          <div className="mb-4 flex items-center gap-3 rounded-lg bg-slate-900 p-3 ring-1 ring-slate-800">
+          <div className="mb-4 flex items-center gap-3 rounded-lg bg-background-surface p-3 ring-1 ring-primary-dark/30">
             {profile.steam_avatar && (
               <img
                 src={profile.steam_avatar}
@@ -136,14 +136,14 @@ export function SteamImport() {
               />
             )}
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm text-slate-200">
+              <p className="truncate text-sm text-ink">
                 {profile.steam_persona ?? 'Cuenta de Steam'}
               </p>
-              <p className="text-xs text-slate-500">Vinculada</p>
+              <p className="text-xs text-lavender">Vinculada</p>
             </div>
             <button
               onClick={handleDisconnect}
-              className="flex-shrink-0 text-xs text-slate-400 underline"
+              className="flex-shrink-0 text-xs text-lavender underline"
             >
               Desvincular
             </button>
@@ -168,7 +168,7 @@ export function SteamImport() {
                 return (
                   <div
                     key={game.appid}
-                    className="flex items-center gap-3 rounded-lg bg-slate-900 p-2 ring-1 ring-slate-800"
+                    className="flex items-center gap-3 rounded-lg bg-background-surface p-2 ring-1 ring-primary-dark/30"
                   >
                     <GameThumb
                       src={game.cover_url}
@@ -180,15 +180,15 @@ export function SteamImport() {
                       placeholderClassName="text-lg"
                     />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-slate-100">
+                      <p className="truncate text-sm font-medium text-ink">
                         {game.name}
                       </p>
-                      <p className="text-xs text-slate-500">{game.hours_played}h jugadas</p>
+                      <p className="text-xs text-lavender">{game.hours_played}h jugadas</p>
                     </div>
                     <button
                       onClick={() => handleImport(game)}
                       disabled={imported || addingAppId === game.appid}
-                      className="flex-shrink-0 rounded-md bg-emerald-700 px-2.5 py-1.5 text-xs font-medium disabled:opacity-40"
+                      className="flex-shrink-0 rounded-md bg-primary px-2.5 py-1.5 text-xs font-medium disabled:opacity-40"
                     >
                       {imported
                         ? 'Importado'
@@ -202,7 +202,7 @@ export function SteamImport() {
           </div>
 
           {!libraryLoading && !error && library.length === 0 && (
-            <p className="text-sm text-slate-400">Tu biblioteca de Steam está vacía.</p>
+            <p className="text-sm text-lavender">Tu biblioteca de Steam está vacía.</p>
           )}
         </>
       )}

@@ -71,7 +71,7 @@ export function GameForm({ onSubmit, existingIgdbIds }: GameFormProps) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <div>
-        <label className="mb-1 block text-sm font-medium text-slate-300">
+        <label className="mb-1 block text-sm font-medium text-lavender">
           Buscar en IGDB
         </label>
         <div className="flex gap-2">
@@ -85,20 +85,20 @@ export function GameForm({ onSubmit, existingIgdbIds }: GameFormProps) {
               }
             }}
             placeholder="Nombre del juego..."
-            className="min-w-0 flex-1 rounded-md bg-slate-900 px-3 py-2.5 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+            className="min-w-0 flex-1 rounded-md bg-background-surface px-3 py-2.5 text-ink ring-1 ring-primary-dark/30 focus:outline-none focus:ring-2 focus:ring-primary"
           />
           <button
             type="button"
             onClick={handleSearch}
             disabled={searching || !query.trim()}
-            className="flex-shrink-0 rounded-md bg-emerald-700 px-4 py-2.5 text-sm font-medium disabled:opacity-40"
+            className="flex-shrink-0 rounded-md bg-primary px-4 py-2.5 text-sm font-medium disabled:opacity-40"
           >
             {searching ? 'Buscando...' : 'Buscar'}
           </button>
         </div>
 
         {results.length > 0 && (
-          <ul className="mt-2 max-h-72 space-y-1 overflow-y-auto rounded-lg bg-slate-900 p-2 ring-1 ring-slate-800">
+          <ul className="mt-2 max-h-72 space-y-1 overflow-y-auto rounded-lg bg-background-surface p-2 ring-1 ring-primary-dark/30">
             {results.map((r) => {
               const resultOwned = existingIgdbIds?.has(r.id)
               return (
@@ -106,9 +106,9 @@ export function GameForm({ onSubmit, existingIgdbIds }: GameFormProps) {
                   <button
                     type="button"
                     onClick={() => applyResult(r)}
-                    className="flex w-full items-center gap-3 rounded-md p-2 text-left text-sm active:bg-slate-800"
+                    className="flex w-full items-center gap-3 rounded-md p-2 text-left text-sm active:bg-primary-dark/20"
                   >
-                    <div className="h-14 w-10 flex-shrink-0 overflow-hidden rounded bg-slate-800">
+                    <div className="h-14 w-10 flex-shrink-0 overflow-hidden rounded bg-primary-dark/20">
                       {r.cover_url && (
                         <img
                           src={r.cover_url}
@@ -119,15 +119,15 @@ export function GameForm({ onSubmit, existingIgdbIds }: GameFormProps) {
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium text-slate-100">{r.name}</p>
+                      <p className="truncate font-medium text-ink">{r.name}</p>
                       {r.first_release_date && (
-                        <p className="text-xs text-slate-500">
+                        <p className="text-xs text-lavender">
                           {new Date(r.first_release_date * 1000).getFullYear()}
                         </p>
                       )}
                     </div>
                     {resultOwned && (
-                      <span className="flex-shrink-0 rounded-full bg-slate-800 px-2 py-0.5 text-xs text-emerald-400">
+                      <span className="flex-shrink-0 rounded-full bg-primary-dark/20 px-2 py-0.5 text-xs text-accent">
                         ya en tu biblioteca
                       </span>
                     )}
@@ -140,8 +140,8 @@ export function GameForm({ onSubmit, existingIgdbIds }: GameFormProps) {
       </div>
 
       {form.cover_url && (
-        <div className="flex gap-3 rounded-lg bg-slate-900 p-3 ring-1 ring-slate-800">
-          <div className="h-24 w-16 flex-shrink-0 overflow-hidden rounded bg-slate-800">
+        <div className="flex gap-3 rounded-lg bg-background-surface p-3 ring-1 ring-primary-dark/30">
+          <div className="h-24 w-16 flex-shrink-0 overflow-hidden rounded bg-primary-dark/20">
             <img
               src={form.cover_url}
               alt={form.title}
@@ -149,9 +149,9 @@ export function GameForm({ onSubmit, existingIgdbIds }: GameFormProps) {
             />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="truncate font-medium text-slate-100">{form.title}</p>
+            <p className="truncate font-medium text-ink">{form.title}</p>
             {form.first_release_date && (
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-lavender">
                 {new Date(form.first_release_date * 1000).getFullYear()}
               </p>
             )}
@@ -168,17 +168,17 @@ export function GameForm({ onSubmit, existingIgdbIds }: GameFormProps) {
       )}
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-slate-300">Título *</label>
+        <label className="mb-1 block text-sm font-medium text-lavender">Título *</label>
         <input
           required
           value={form.title}
           onChange={(e) => setForm({ ...form, title: e.target.value })}
-          className="w-full rounded-md bg-slate-900 px-3 py-2.5 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+          className="w-full rounded-md bg-background-surface px-3 py-2.5 text-ink ring-1 ring-primary-dark/30 focus:outline-none focus:ring-2 focus:ring-primary"
         />
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-slate-300">
+        <label className="mb-1 block text-sm font-medium text-lavender">
           Plataforma(s)
         </label>
         <PlatformPicker
@@ -188,7 +188,7 @@ export function GameForm({ onSubmit, existingIgdbIds }: GameFormProps) {
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-slate-300">Estado</label>
+        <label className="mb-1 block text-sm font-medium text-lavender">Estado</label>
         <StatusPicker
           value={form.status ?? 'pendiente'}
           onChange={(status: GameStatus) => setForm({ ...form, status })}
@@ -196,12 +196,12 @@ export function GameForm({ onSubmit, existingIgdbIds }: GameFormProps) {
       </div>
 
       <div>
-        <label className="mb-1 block text-sm font-medium text-slate-300">Género</label>
+        <label className="mb-1 block text-sm font-medium text-lavender">Género</label>
         <input
           value={form.genre ?? ''}
           onChange={(e) => setForm({ ...form, genre: e.target.value })}
           placeholder="Separa varios con coma"
-          className="w-full rounded-md bg-slate-900 px-3 py-2.5 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+          className="w-full rounded-md bg-background-surface px-3 py-2.5 text-ink ring-1 ring-primary-dark/30 focus:outline-none focus:ring-2 focus:ring-primary"
         />
       </div>
 
@@ -210,7 +210,7 @@ export function GameForm({ onSubmit, existingIgdbIds }: GameFormProps) {
       <button
         type="submit"
         disabled={saving || !form.title.trim()}
-        className="rounded-md bg-emerald-600 py-3 font-medium text-slate-950 disabled:opacity-40"
+        className="rounded-md bg-primary py-3 font-medium text-white disabled:opacity-40"
       >
         {saving ? 'Guardando...' : 'Guardar juego'}
       </button>

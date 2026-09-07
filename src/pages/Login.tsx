@@ -31,7 +31,7 @@ export function Login() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-6">
-      <h1 className="mb-8 text-3xl font-bold text-emerald-400">PlayDex</h1>
+      <h1 className="mb-8 text-3xl font-bold text-accent">PlayDex</h1>
       <form
         onSubmit={handleSubmit}
         className="flex w-full max-w-sm flex-col gap-4"
@@ -42,7 +42,7 @@ export function Login() {
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="rounded-md bg-slate-900 px-3 py-2.5 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600"
+          className="rounded-md bg-background-surface px-3 py-2.5 text-ink ring-1 ring-primary-dark/30 focus:outline-none focus:ring-primary"
         />
         <input
           type="password"
@@ -50,16 +50,16 @@ export function Login() {
           placeholder="Contraseña"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="rounded-md bg-slate-900 px-3 py-2.5 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600"
+          className="rounded-md bg-background-surface px-3 py-2.5 text-ink ring-1 ring-primary-dark/30 focus:outline-none focus:ring-primary"
         />
 
         {error && <p className="text-sm text-red-400">{error}</p>}
-        {message && <p className="text-sm text-emerald-400">{message}</p>}
+        {message && <p className="text-sm text-accent">{message}</p>}
 
         <button
           type="submit"
           disabled={loading}
-          className="rounded-md bg-emerald-600 py-2.5 font-medium text-slate-950 disabled:opacity-50"
+          className="rounded-md bg-primary py-2.5 font-medium text-white disabled:opacity-50"
         >
           {loading
             ? 'Cargando...'
@@ -71,7 +71,7 @@ export function Login() {
         <button
           type="button"
           onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
-          className="text-sm text-slate-400"
+          className="text-sm text-lavender"
         >
           {mode === 'signin'
             ? '¿No tienes cuenta? Regístrate'

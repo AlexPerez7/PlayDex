@@ -41,25 +41,25 @@ export function GameDeals({
           href={d.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-between rounded-md bg-slate-900 px-3 py-2 text-sm ring-1 ring-slate-800 active:bg-slate-800"
+          className="flex items-center justify-between rounded-md bg-background-surface px-3 py-2 text-sm ring-1 ring-primary-dark/30 active:bg-primary-dark/20"
         >
-          <span className="text-slate-300">{d.store}</span>
+          <span className="text-lavender">{d.store}</span>
           <span className="flex items-center gap-2">
             {d.savingsPercent > 0 && (
-              <span className="rounded-full bg-emerald-700 px-1.5 py-0.5 text-xs text-emerald-100">
+              <span className="rounded-full bg-accent px-1.5 py-0.5 text-xs text-primary-darker">
                 -{d.savingsPercent}%
               </span>
             )}
             {d.savingsPercent > 0 && (
-              <span className="text-xs text-slate-500 line-through">
+              <span className="text-xs text-lavender line-through">
                 ${d.normalPrice.toFixed(2)}
               </span>
             )}
-            <span className="font-medium text-slate-100">${d.salePrice.toFixed(2)}</span>
+            <span className="font-medium text-ink">${d.salePrice.toFixed(2)}</span>
           </span>
         </a>
       ))}
-      <p className="text-xs text-slate-500">Precios en USD, tiendas de PC vía CheapShark</p>
+      <p className="text-xs text-lavender">Precios en USD, tiendas de PC vía CheapShark</p>
     </div>
   )
 }

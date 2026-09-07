@@ -11,11 +11,11 @@ const STAR_PATH =
 function Star({ fillPercent }: { fillPercent: number }) {
   return (
     <div className="relative h-7 w-7">
-      <svg viewBox="0 0 24 24" fill="currentColor" className="absolute inset-0 h-full w-full text-slate-700">
+      <svg viewBox="0 0 24 24" fill="currentColor" className="absolute inset-0 h-full w-full text-primary-dark/40">
         <path d={STAR_PATH} />
       </svg>
       <div className="absolute inset-0 overflow-hidden" style={{ width: `${fillPercent}%` }}>
-        <svg viewBox="0 0 24 24" fill="currentColor" className="h-7 w-7 text-emerald-400">
+        <svg viewBox="0 0 24 24" fill="currentColor" className="h-7 w-7 text-accent">
           <path d={STAR_PATH} />
         </svg>
       </div>
@@ -53,7 +53,7 @@ export function StarRating({ value, onChange }: StarRatingProps) {
           )
         })}
       </div>
-      <span className="text-sm text-slate-400">
+      <span className="text-sm text-lavender">
         {value ? `${value}/10` : 'Sin puntaje'}
       </span>
     </div>

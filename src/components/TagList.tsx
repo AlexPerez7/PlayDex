@@ -9,7 +9,7 @@ export function TagList({ value }: { value: string | null | undefined }) {
       {tags.map((tag) => (
         <span
           key={tag}
-          className="rounded-full bg-slate-800 px-2 py-0.5 text-xs text-slate-300"
+          className="rounded-full bg-primary-dark/20 px-2 py-0.5 text-xs text-lavender"
         >
           {tag}
         </span>

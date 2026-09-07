@@ -93,7 +93,7 @@ export function Home() {
   return (
     <PageContainer>
       <div
-        className="flex items-center justify-center overflow-hidden text-xs text-slate-500 transition-[height]"
+        className="flex items-center justify-center overflow-hidden text-xs text-lavender transition-[height]"
         style={{ height: refreshing ? 32 : pullDistance * 0.4 }}
       >
         {refreshing
@@ -106,7 +106,7 @@ export function Home() {
       </div>
 
       <h1 className="mb-1 text-xl font-semibold">Inicio</h1>
-      <p className="mb-4 text-sm text-slate-400">
+      <p className="mb-4 text-sm text-lavender">
         Juegos con más repercusión salidos en los últimos 2 años
       </p>
 
@@ -120,9 +120,9 @@ export function Home() {
           return (
             <div
               key={result.id}
-              className="flex flex-col overflow-hidden rounded-lg bg-slate-900 ring-1 ring-slate-800"
+              className="flex flex-col overflow-hidden rounded-lg bg-background-surface ring-1 ring-primary-dark/30"
             >
-              <div className="aspect-[3/4] w-full bg-slate-800">
+              <div className="aspect-[3/4] w-full bg-primary-dark/20">
                 {result.cover_url ? (
                   <img
                     src={result.cover_url}
@@ -132,19 +132,19 @@ export function Home() {
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center">
-                    <Gamepad2 className="text-slate-600" size={28} />
+                    <Gamepad2 className="text-lavender/50" size={28} />
                   </div>
                 )}
               </div>
               <div className="flex flex-1 flex-col gap-1.5 p-2.5">
-                <p className="line-clamp-2 text-sm font-medium text-slate-100">
+                <p className="line-clamp-2 text-sm font-medium text-ink">
                   {result.name}
                 </p>
                 <TagList value={result.genres.slice(0, 2).join(', ')} />
                 <button
                   onClick={() => handleQuickAdd(result)}
                   disabled={alreadyOwned || addingId === result.id}
-                  className="mt-auto rounded-md bg-emerald-700 py-1.5 text-xs font-medium disabled:opacity-40"
+                  className="mt-auto rounded-md bg-primary py-1.5 text-xs font-medium disabled:opacity-40"
                 >
                   {alreadyOwned
                     ? 'En tu biblioteca'

@@ -115,8 +115,8 @@ export function GameDetail() {
   if (!game) {
     return (
       <PageContainer>
-        <p className="text-sm text-slate-400">No se encontró el juego.</p>
-        <button onClick={() => navigate('/')} className="mt-4 text-emerald-400">
+        <p className="text-sm text-lavender">No se encontró el juego.</p>
+        <button onClick={() => navigate('/')} className="mt-4 text-accent">
           Volver a la biblioteca
         </button>
       </PageContainer>
@@ -125,13 +125,13 @@ export function GameDetail() {
 
   return (
     <PageContainer>
-      <button onClick={() => navigate('/')} className="mb-4 text-sm text-emerald-400">
+      <button onClick={() => navigate('/')} className="mb-4 text-sm text-accent">
         ← Volver
       </button>
 
       <div className="mx-auto md:max-w-xl">
         <div className="mb-4 flex gap-3">
-          <div className="h-32 w-24 flex-shrink-0 overflow-hidden rounded bg-slate-800 md:h-48 md:w-36">
+          <div className="h-32 w-24 flex-shrink-0 overflow-hidden rounded bg-primary-dark/20 md:h-48 md:w-36">
             <GameThumb
               src={game.cover_url}
               alt={game.title}
@@ -148,7 +148,7 @@ export function GameDetail() {
               <TagList value={game.platform} />
             </div>
             {game.first_release_date && (
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-lavender">
                 {new Date(game.first_release_date * 1000).getFullYear()}
               </p>
             )}
@@ -156,7 +156,7 @@ export function GameDetail() {
         </div>
 
         {game.summary && (
-          <p className="mb-4 text-sm text-slate-400">{game.summary}</p>
+          <p className="mb-4 text-sm text-lavender">{game.summary}</p>
         )}
 
         <div className="mb-5">
@@ -165,7 +165,7 @@ export function GameDetail() {
 
         <div className="flex flex-col gap-5">
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-300">
+            <label className="mb-1.5 block text-sm font-medium text-lavender">
               Plataforma(s)
             </label>
             <PlatformPicker
@@ -175,7 +175,7 @@ export function GameDetail() {
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-300">Estado</label>
+            <label className="mb-1.5 block text-sm font-medium text-lavender">Estado</label>
             <StatusPicker
               value={current?.status ?? 'pendiente'}
               onChange={(status) => setForm({ ...(form ?? game), status })}
@@ -184,43 +184,43 @@ export function GameDetail() {
 
           {current?.status === 'pendiente' && (
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-slate-300">
+              <label className="mb-1.5 block text-sm font-medium text-lavender">
                 Dónde comprarlo
               </label>
               <GameDeals title={game.title} steamAppId={game.steam_appid} />
             </div>
           )}
 
-          <div className="border-t border-slate-800 pt-5">
-            <h2 className="mb-3 text-sm font-medium text-slate-300">Tu progreso</h2>
+          <div className="border-t border-primary-dark/20 pt-5">
+            <h2 className="mb-3 text-sm font-medium text-lavender">Tu progreso</h2>
             <div className="flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1 block text-sm text-slate-400">Fecha inicio</label>
+                  <label className="mb-1 block text-sm text-lavender">Fecha inicio</label>
                   <input
                     type="date"
                     value={current?.date_started ?? ''}
                     onChange={(e) =>
                       setForm({ ...(form ?? game), date_started: e.target.value || null })
                     }
-                    className="w-full rounded-md bg-slate-900 px-3 py-2.5 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                    className="w-full rounded-md bg-background-surface px-3 py-2.5 text-ink ring-1 ring-primary-dark/30 focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm text-slate-400">Fecha fin</label>
+                  <label className="mb-1 block text-sm text-lavender">Fecha fin</label>
                   <input
                     type="date"
                     value={current?.date_finished ?? ''}
                     onChange={(e) =>
                       setForm({ ...(form ?? game), date_finished: e.target.value || null })
                     }
-                    className="w-full rounded-md bg-slate-900 px-3 py-2.5 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                    className="w-full rounded-md bg-background-surface px-3 py-2.5 text-ink ring-1 ring-primary-dark/30 focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="mb-1 block text-sm text-slate-400">Horas jugadas</label>
+                <label className="mb-1 block text-sm text-lavender">Horas jugadas</label>
                 <input
                   type="number"
                   inputMode="decimal"
@@ -236,12 +236,12 @@ export function GameDetail() {
                     }
                   }}
                   onBlur={() => setHoursText(null)}
-                  className="w-full rounded-md bg-slate-900 px-3 py-2.5 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                  className="w-full rounded-md bg-background-surface px-3 py-2.5 text-ink ring-1 ring-primary-dark/30 focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-sm text-slate-400">Puntaje</label>
+                <label className="mb-1 block text-sm text-lavender">Puntaje</label>
                 <StarRating
                   value={current?.rating ?? null}
                   onChange={(rating) => setForm({ ...(form ?? game), rating })}
@@ -250,28 +250,28 @@ export function GameDetail() {
             </div>
           </div>
 
-          <div className="border-t border-slate-800 pt-5">
-            <h2 className="mb-3 text-sm font-medium text-slate-300">Notas y reseña</h2>
+          <div className="border-t border-primary-dark/20 pt-5">
+            <h2 className="mb-3 text-sm font-medium text-lavender">Notas y reseña</h2>
             <div className="flex flex-col gap-4">
               <div>
-                <label className="mb-1 block text-sm text-slate-400">Notas</label>
+                <label className="mb-1 block text-sm text-lavender">Notas</label>
                 <textarea
                   value={current?.notes ?? ''}
                   onChange={(e) => setForm({ ...(form ?? game), notes: e.target.value })}
                   rows={3}
                   placeholder="Notas de progreso, spoilers, pendientes..."
-                  className="w-full rounded-md bg-slate-900 px-3 py-2.5 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                  className="w-full rounded-md bg-background-surface px-3 py-2.5 text-ink ring-1 ring-primary-dark/30 focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-sm text-slate-400">Reseña</label>
+                <label className="mb-1 block text-sm text-lavender">Reseña</label>
                 <textarea
                   value={current?.review ?? ''}
                   onChange={(e) => setForm({ ...(form ?? game), review: e.target.value })}
                   rows={4}
                   placeholder="Tu opinión sobre el juego..."
-                  className="w-full rounded-md bg-slate-900 px-3 py-2.5 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                  className="w-full rounded-md bg-background-surface px-3 py-2.5 text-ink ring-1 ring-primary-dark/30 focus:outline-none focus:ring-2 focus:ring-primary"
                 />
               </div>
             </div>
@@ -283,7 +283,7 @@ export function GameDetail() {
             <button
               onClick={handleSave}
               disabled={saving || !form}
-              className="flex-1 rounded-md bg-emerald-600 py-3 font-medium text-slate-950 disabled:opacity-40"
+              className="flex-1 rounded-md bg-primary py-3 font-medium text-white disabled:opacity-40"
             >
               {saving ? 'Guardando...' : 'Guardar cambios'}
             </button>
@@ -295,12 +295,12 @@ export function GameDetail() {
             </button>
           </div>
 
-          <div className="border-t border-slate-800 pt-4">
-            <h2 className="mb-2 text-sm font-medium text-slate-300">
+          <div className="border-t border-primary-dark/20 pt-4">
+            <h2 className="mb-2 text-sm font-medium text-lavender">
               Mis listas
             </h2>
             {lists.length === 0 ? (
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-lavender">
                 No tienes listas todavía. Crea una desde la pestaña "Listas".
               </p>
             ) : (
@@ -314,8 +314,8 @@ export function GameDetail() {
                       onClick={() => toggleList(list.id)}
                       className={`rounded-full px-3 py-1 text-xs ${
                         active
-                          ? 'bg-emerald-600 text-slate-950'
-                          : 'bg-slate-900 text-slate-400 ring-1 ring-slate-800'
+                          ? 'bg-accent text-primary-darker'
+                          : 'bg-background-surface text-lavender ring-1 ring-primary-dark/30'
                       }`}
                     >
                       {active ? '✓ ' : '+ '}
@@ -327,8 +327,8 @@ export function GameDetail() {
             )}
           </div>
 
-          <div className="border-t border-slate-800 pt-4">
-            <h2 className="mb-2 text-sm font-medium text-slate-300">
+          <div className="border-t border-primary-dark/20 pt-4">
+            <h2 className="mb-2 text-sm font-medium text-lavender">
               Sesiones de juego
             </h2>
 
@@ -337,7 +337,7 @@ export function GameDetail() {
                 type="date"
                 value={sessionDate}
                 onChange={(e) => setSessionDate(e.target.value)}
-                className="w-full rounded-md bg-slate-900 px-3 py-2 text-sm text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600"
+                className="w-full rounded-md bg-background-surface px-3 py-2 text-sm text-ink ring-1 ring-primary-dark/30 focus:outline-none focus:ring-primary"
               />
               <div className="flex gap-2">
                 <input
@@ -346,12 +346,12 @@ export function GameDetail() {
                   placeholder="Minutos"
                   value={sessionMinutes}
                   onChange={(e) => setSessionMinutes(e.target.value)}
-                  className="min-w-0 flex-1 rounded-md bg-slate-900 px-3 py-2 text-sm text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-emerald-600"
+                  className="min-w-0 flex-1 rounded-md bg-background-surface px-3 py-2 text-sm text-ink ring-1 ring-primary-dark/30 focus:outline-none focus:ring-primary"
                 />
                 <button
                   type="button"
                   onClick={handleAddSession}
-                  className="flex-shrink-0 rounded-md bg-emerald-700 px-4 py-2 text-sm font-medium"
+                  className="flex-shrink-0 rounded-md bg-primary px-4 py-2 text-sm font-medium"
                 >
                   Agregar
                 </button>
@@ -360,15 +360,15 @@ export function GameDetail() {
             {sessionError && <p className="mb-2 text-sm text-red-400">{sessionError}</p>}
 
             {sessions.length === 0 ? (
-              <p className="text-sm text-slate-500">Todavía no registraste sesiones.</p>
+              <p className="text-sm text-lavender">Todavía no registraste sesiones.</p>
             ) : (
               <ul className="flex flex-col gap-1.5">
                 {sessions.map((s) => (
                   <li
                     key={s.id}
-                    className="flex items-center justify-between rounded-md bg-slate-900 px-3 py-2 text-sm ring-1 ring-slate-800"
+                    className="flex items-center justify-between rounded-md bg-background-surface px-3 py-2 text-sm ring-1 ring-primary-dark/30"
                   >
-                    <span className="text-slate-300">
+                    <span className="text-lavender">
                       {new Date(s.played_at).toLocaleDateString()} — {s.duration_minutes} min
                     </span>
                     <button

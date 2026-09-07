@@ -1,5 +1,16 @@
 @import "tailwindcss";
 
+@theme {
+  --color-primary: #7e3ae8;
+  --color-primary-dark: #541ea4;
+  --color-primary-darker: #451c82;
+  --color-accent: #da3fef;
+  --color-lavender: #c8b7f9;
+  --color-background: #14091f;
+  --color-background-surface: #1f1330;
+  --color-ink: #f5f3ff;
+}
+
 :root {
   color-scheme: dark;
 }
@@ -9,7 +20,7 @@ html, body, #root {
 }
 
 body {
-  @apply bg-slate-950 text-slate-100 antialiased;
+  @apply bg-background text-ink antialiased;
 }
 
 .scrollbar-hide {

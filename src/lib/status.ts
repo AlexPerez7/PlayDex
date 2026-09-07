@@ -17,9 +17,9 @@ export const statusLabels: Record<GameStatus, string> = {
 }
 
 export const statusColors: Record<GameStatus, string> = {
-  pendiente: 'bg-slate-700 text-slate-200',
-  jugando: 'bg-emerald-700 text-emerald-100',
-  completado: 'bg-blue-700 text-blue-100',
-  abandonado: 'bg-red-800 text-red-100',
-  en_pausa: 'bg-amber-700 text-amber-100',
+  pendiente: 'bg-primary-dark/40 text-lavender',
+  jugando: 'bg-accent text-primary-darker',
+  completado: 'bg-lavender text-primary-darker',
+  abandonado: 'bg-background-surface text-lavender ring-1 ring-primary-dark',
+  en_pausa: 'bg-primary text-white',
 }

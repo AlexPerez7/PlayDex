@@ -51,8 +51,8 @@ function ChipRow<T extends string>({
             onClick={() => onChange(opt)}
             className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
               value === opt
-                ? 'bg-emerald-600 text-slate-950'
-                : 'bg-slate-900 text-slate-400 ring-1 ring-slate-800 active:bg-slate-800'
+                ? 'bg-accent text-primary-darker'
+                : 'bg-background-surface text-lavender ring-1 ring-primary-dark/30 active:bg-primary-dark/20'
             }`}
           >
             {labelFor(opt)}
@@ -64,7 +64,7 @@ function ChipRow<T extends string>({
         className="pointer-events-none absolute inset-y-0 right-0 w-8"
         style={{
           background:
-            'linear-gradient(to left, var(--color-slate-950, #020617), transparent)',
+            'linear-gradient(to left, var(--color-background, #14091f), transparent)',
         }}
       />
     </div>
@@ -117,11 +117,11 @@ export function Library() {
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder="Buscar por título..."
-        className="mb-4 w-full rounded-md bg-slate-900 px-3 py-2.5 text-sm text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 md:max-w-xs"
+        className="mb-4 w-full rounded-md bg-background-surface px-3 py-2.5 text-sm text-ink ring-1 ring-primary-dark/30 focus:outline-none focus:ring-2 focus:ring-primary md:max-w-xs"
       />
 
       <div className="mb-3">
-        <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">
+        <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-lavender">
           Estado
         </p>
         <ChipRow
@@ -134,7 +134,7 @@ export function Library() {
 
       {platforms.length > 1 && (
         <div className="mb-3">
-          <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">
+          <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-lavender">
             Plataforma
           </p>
           <ChipRow
@@ -147,7 +147,7 @@ export function Library() {
       )}
 
       <div className="mb-4">
-        <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">
+        <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-lavender">
           Ordenar
         </p>
         <ChipRow
@@ -165,7 +165,7 @@ export function Library() {
       ) : (
         <>
           {sorted.length === 0 && (
-            <p className="mt-8 text-center text-sm text-slate-500">
+            <p className="mt-8 text-center text-sm text-lavender">
               No hay juegos que coincidan con el filtro.
             </p>
           )}

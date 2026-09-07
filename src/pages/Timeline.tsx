@@ -82,16 +82,16 @@ export function Timeline() {
 
   return (
     <PageContainer>
-      <button onClick={() => navigate('/dashboard')} className="mb-4 text-sm text-emerald-400">
+      <button onClick={() => navigate('/dashboard')} className="mb-4 text-sm text-accent">
         ← Dashboard
       </button>
 
       <h1 className="mb-4 text-xl font-semibold">Diario</h1>
 
-      {loading && <p className="text-sm text-slate-400">Cargando...</p>}
+      {loading && <p className="text-sm text-lavender">Cargando...</p>}
 
       {!loading && events.length === 0 && (
-        <p className="mt-8 text-center text-sm text-slate-500">
+        <p className="mt-8 text-center text-sm text-lavender">
           Todavía no hay actividad registrada.
         </p>
       )}
@@ -101,12 +101,12 @@ export function Timeline() {
           <li key={i}>
             <button
               onClick={() => navigate(`/game/${e.gameId}`)}
-              className="flex w-full items-start gap-3 rounded-lg bg-slate-900 p-3 text-left ring-1 ring-slate-800"
+              className="flex w-full items-start gap-3 rounded-lg bg-background-surface p-3 text-left ring-1 ring-primary-dark/30"
             >
-              <e.icon className="mt-0.5 shrink-0 text-emerald-400" size={20} />
+              <e.icon className="mt-0.5 shrink-0 text-accent" size={20} />
               <div className="min-w-0 flex-1">
-                <p className="text-sm text-slate-100">{e.text}</p>
-                <p className="text-xs text-slate-500">
+                <p className="text-sm text-ink">{e.text}</p>
+                <p className="text-xs text-lavender">
                   {new Date(e.date).toLocaleDateString()}
                 </p>
               </div>

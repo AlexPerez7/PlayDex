@@ -1,10 +1,10 @@
 export function Skeleton({ className = '' }: { className?: string }) {
-  return <div className={`animate-pulse rounded bg-slate-800 ${className}`} />
+  return <div className={`animate-pulse rounded bg-primary-dark/20 ${className}`} />
 }
 
 export function GameCardSkeleton() {
   return (
-    <div className="flex w-full items-center gap-3 rounded-lg bg-slate-900 p-3 ring-1 ring-slate-800">
+    <div className="flex w-full items-center gap-3 rounded-lg bg-background-surface p-3 ring-1 ring-primary-dark/30">
       <Skeleton className="h-20 w-14 flex-shrink-0" />
       <div className="min-w-0 flex-1 space-y-2">
         <Skeleton className="h-4 w-3/4" />
@@ -27,7 +27,7 @@ export function GameCardGridSkeleton({ count = 6 }: { count?: number }) {
 
 export function PopularCardSkeleton() {
   return (
-    <div className="flex flex-col overflow-hidden rounded-lg bg-slate-900 ring-1 ring-slate-800">
+    <div className="flex flex-col overflow-hidden rounded-lg bg-background-surface ring-1 ring-primary-dark/30">
       <Skeleton className="aspect-[3/4] w-full rounded-none" />
       <div className="flex flex-col gap-2 p-2.5">
         <Skeleton className="h-4 w-full" />
@@ -40,7 +40,7 @@ export function PopularCardSkeleton() {
 
 export function StatsCardSkeleton() {
   return (
-    <div className="flex flex-col gap-2 rounded-lg bg-slate-900 p-3 ring-1 ring-slate-800">
+    <div className="flex flex-col gap-2 rounded-lg bg-background-surface p-3 ring-1 ring-primary-dark/30">
       <Skeleton className="h-4 w-10" />
       <Skeleton className="h-6 w-16" />
     </div>
