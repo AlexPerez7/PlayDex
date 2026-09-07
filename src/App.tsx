@@ -11,6 +11,7 @@ import { GameDetail } from './pages/GameDetail'
 import { Lists } from './pages/Lists'
 import { ListDetail } from './pages/ListDetail'
 import { Timeline } from './pages/Timeline'
+import { SteamImport } from './pages/SteamImport'
 import { Login } from './pages/Login'
 
 function App() {
@@ -36,6 +37,7 @@ function App() {
             <Route path="/" element={<Library />} />
             <Route path="/home" element={<Home />} />
             <Route path="/add" element={<AddGame />} />
+            <Route path="/steam-import" element={<SteamImport />} />
             <Route path="/game/:id" element={<GameDetail />} />
             <Route path="/lists" element={<Lists />} />
             <Route path="/lists/:id" element={<ListDetail />} />

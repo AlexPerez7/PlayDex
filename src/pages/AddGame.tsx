@@ -19,7 +19,12 @@ export function AddGame() {
 
   return (
     <PageContainer>
-      <h1 className="mb-4 text-xl font-semibold">Agregar juego</h1>
+      <div className="mb-4 flex items-center justify-between">
+        <h1 className="text-xl font-semibold">Agregar juego</h1>
+        <button onClick={() => navigate('/steam-import')} className="text-sm text-emerald-400">
+          Importar de Steam →
+        </button>
+      </div>
       <div className="md:mx-auto md:max-w-md">
         <GameForm onSubmit={handleSubmit} existingIgdbIds={existingIgdbIds} />
       </div>

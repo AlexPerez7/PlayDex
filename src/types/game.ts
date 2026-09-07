@@ -22,6 +22,7 @@ export interface Game {
   date_finished: string | null
   summary: string | null
   first_release_date: number | null
+  steam_appid: number | null
   created_at: string
 }
 
