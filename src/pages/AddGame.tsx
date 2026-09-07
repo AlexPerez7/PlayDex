@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { SiSteam } from 'react-icons/si'
 import { GameForm } from '../components/GameForm'
 import { PageContainer } from '../components/PageContainer'
 import { useGames } from '../hooks/useGames'
@@ -21,7 +22,11 @@ export function AddGame() {
     <PageContainer>
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-semibold">Agregar juego</h1>
-        <button onClick={() => navigate('/steam-import')} className="text-sm text-accent">
+        <button
+          onClick={() => navigate('/steam-import')}
+          className="flex items-center gap-1.5 text-sm text-accent"
+        >
+          <SiSteam size={16} />
           Importar de Steam →
         </button>
       </div>
