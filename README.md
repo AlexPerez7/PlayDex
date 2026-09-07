@@ -15,10 +15,11 @@ En producción: https://playdex.netlify.app/
 
 ## Integraciones externas (todas vía Edge Functions de Supabase, nunca desde el frontend)
 
-- **IGDB** (metadata de juegos, populares) — vía Twitch OAuth. Función `igdb-search`.
+- **IGDB** (metadata de juegos, populares y duración estimada) — vía Twitch OAuth. Función `igdb-search`, con modos `query` (default), `popular` y `timeToBeat` (endpoint oficial `game_time_to_beats`).
 - **Steam Web API** (importar biblioteca propia con horas jugadas reales). Función `steam-library`.
-- **CheapShark** (precios actuales en tiendas de PC, sin API key). Función `game-deals`.
-- **HowLongToBeat** (duración estimada para completar un juego, sin API oficial — imita la request interna del sitio, es la integración más frágil de las cuatro). Función `hltb-search`.
+- **CheapShark** (precios actuales en tiendas de PC, sin API key). Función `game-deals`. Los resultados se cachean en la tabla `price_cache` (TTL 12 h) porque CheapShark limita por IP y los Edge Functions comparten IP; usa `steam_appid` cuando está disponible para un match exacto.
+
+> La duración estimada antes venía de HowLongToBeat (scraping de un endpoint interno no oficial). Se migró a IGDB `game_time_to_beats` por estabilidad; la función `hltb-search` fue eliminada.
 
 ## Funcionalidades
 
@@ -28,7 +29,7 @@ En producción: https://playdex.netlify.app/
 - Importar biblioteca de Steam con horas jugadas reales
 - Detalle/edición: estado, plataformas (multi-selección), fechas de inicio/fin, horas jugadas, puntaje (estrellas), notas, reseña
 - Precios actuales en tiendas de PC (CheapShark) para juegos en estado "Pendiente"
-- Duración estimada (HowLongToBeat) en el detalle de cada juego
+- Duración estimada (IGDB: rápido / normal / completista) en el detalle de cada juego
 - Registro de sesiones de juego (fecha + minutos), que suman automáticamente a las horas totales
 - Listas personalizadas (crear, agregar/quitar juegos)
 - Pantalla de Inicio con juegos populares recientes (vía IGDB) y alta rápida a la biblioteca
@@ -47,17 +48,14 @@ En producción: https://playdex.netlify.app/
    VITE_SUPABASE_URL=
    VITE_SUPABASE_ANON_KEY=
    ```
-3. Ejecutar las migraciones SQL en Supabase, en orden (carpeta `supabase/migrations/`, actualmente 0001 a 0004).
+3. Ejecutar las migraciones SQL en Supabase, en orden (carpeta `supabase/migrations/`, actualmente 0001 a 0005), o `supabase db push`.
 4. Configurar los secrets de las Edge Functions (nunca en el frontend) y desplegarlas:
    ```
    supabase secrets set TWITCH_CLIENT_ID=xxx TWITCH_CLIENT_SECRET=xxx
    supabase secrets set STEAM_API_KEY=xxx STEAM_ID=xxx
-   supabase functions deploy igdb-search
-   supabase functions deploy steam-library
-   supabase functions deploy game-deals
-   supabase functions deploy hltb-search
+   supabase functions deploy igdb-search steam-library game-deals
    ```
-   `game-deals` y `hltb-search` no necesitan secrets (APIs públicas).
+   `game-deals` no necesita secrets (API pública); usa la `SUPABASE_SERVICE_ROLE_KEY` que Supabase inyecta automáticamente para escribir en `price_cache`.
 5. Correr en desarrollo:
    ```
    npm run dev

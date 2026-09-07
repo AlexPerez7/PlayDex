@@ -4,6 +4,7 @@
 // STEAM_ID puede ser el SteamID64 numerico o el nombre de la URL personalizada
 // (ej. "Alekay7" de steamcommunity.com/id/Alekay7) - se resuelve automaticamente.
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
+import { handlePreflight, jsonResponse, errorResponse } from '../_shared/http.ts'
 
 const STEAM_API_KEY = Deno.env.get('STEAM_API_KEY')!
 const STEAM_ID_OR_VANITY = Deno.env.get('STEAM_ID')!
@@ -34,14 +35,8 @@ async function resolveSteamId(): Promise<string> {
 }
 
 serve(async (req) => {
-  const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  }
-
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+  const preflight = handlePreflight(req)
+  if (preflight) return preflight
 
   try {
     const steamId = await resolveSteamId()
@@ -74,21 +69,13 @@ serve(async (req) => {
       .sort((a, b) => b.playtime_forever - a.playtime_forever)
       .map((g) => ({
         appid: g.appid,
-        name: g.name,
+        name: g.name.trim(),
         hours_played: Math.round((g.playtime_forever / 60) * 10) / 10,
         cover_url: `https://cdn.akamai.steamstatic.com/steam/apps/${g.appid}/header.jpg`,
       }))
 
-    return new Response(JSON.stringify(results), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return jsonResponse(results)
   } catch (err) {
-    return new Response(
-      JSON.stringify({ error: err instanceof Error ? err.message : 'Error desconocido' }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    )
+    return errorResponse(err)
   }
 })

@@ -2,17 +2,23 @@ import { useEffect, useState } from 'react'
 import { getGameDeals, type GameDeal } from '../lib/deals'
 import { Skeleton } from './Skeleton'
 
-export function GameDeals({ title }: { title: string }) {
+export function GameDeals({
+  title,
+  steamAppId,
+}: {
+  title: string
+  steamAppId?: number | null
+}) {
   const [deals, setDeals] = useState<GameDeal[] | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     setLoading(true)
-    getGameDeals(title)
+    getGameDeals(title, steamAppId)
       .then(setDeals)
       .catch(() => setDeals([]))
       .finally(() => setLoading(false))
-  }, [title])
+  }, [title, steamAppId])
 
   if (loading) {
     return (

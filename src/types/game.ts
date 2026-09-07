@@ -55,3 +55,11 @@ export interface IgdbSearchResult {
   first_release_date: number | null
   summary: string | null
 }
+
+/** Duración estimada en horas (endpoint game_time_to_beats de IGDB). */
+export interface TimeToBeat {
+  hastilyHours: number | null
+  normallyHours: number | null
+  completelyHours: number | null
+  count: number
+}

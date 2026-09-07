@@ -8,7 +8,7 @@ import { TagList } from '../components/TagList'
 import { PlatformPicker } from '../components/PlatformPicker'
 import { StatusPicker } from '../components/StatusPicker'
 import { GameDeals } from '../components/GameDeals'
-import { HowLongToBeat } from '../components/HowLongToBeat'
+import { TimeToBeat } from '../components/TimeToBeat'
 import { Skeleton } from '../components/Skeleton'
 import { PageContainer } from '../components/PageContainer'
 import type { Game } from '../types/game'
@@ -153,7 +153,7 @@ export function GameDetail() {
         )}
 
         <div className="mb-5">
-          <HowLongToBeat title={game.title} />
+          <TimeToBeat igdbId={game.igdb_id} title={game.title} />
         </div>
 
         <div className="flex flex-col gap-5">
@@ -180,7 +180,7 @@ export function GameDetail() {
               <label className="mb-1.5 block text-sm font-medium text-slate-300">
                 Dónde comprarlo
               </label>
-              <GameDeals title={game.title} />
+              <GameDeals title={game.title} steamAppId={game.steam_appid} />
             </div>
           )}
 

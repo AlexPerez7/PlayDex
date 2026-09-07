@@ -8,9 +8,12 @@ export interface GameDeal {
   url: string
 }
 
-export async function getGameDeals(title: string): Promise<GameDeal[]> {
+export async function getGameDeals(
+  title: string,
+  steamAppId?: number | null
+): Promise<GameDeal[]> {
   const { data, error } = await supabase.functions.invoke<GameDeal[]>('game-deals', {
-    body: { title },
+    body: { title, steamAppId: steamAppId ?? undefined },
   })
 
   if (error) throw error
