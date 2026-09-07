@@ -21,6 +21,10 @@ html, body, #root {
   height: 100%;
 }
 
+html, body {
+  overflow-x: hidden;
+}
+
 body {
   @apply bg-background text-ink antialiased;
 }

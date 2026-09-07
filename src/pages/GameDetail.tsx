@@ -261,7 +261,7 @@ export function GameDetail() {
                 <ChevronDown size={14} />
               </button>
               {statusOpen && (
-                <div className="absolute left-0 top-full z-10 mt-2 w-max rounded-xl bg-background-surface p-2 shadow-lg ring-1 ring-primary-dark/30">
+                <div className="absolute left-0 top-full z-10 mt-2 w-64 max-w-[calc(100vw-3rem)] rounded-xl bg-background-surface p-2 shadow-lg ring-1 ring-primary-dark/30">
                   <StatusPicker value={status} onChange={handleStatusChange} />
                 </div>
               )}
