@@ -126,29 +126,7 @@ function toHours(seconds?: number): number | null {
   return Math.round((seconds / 3600) * 10) / 10
 }
 
-async function timeToBeat(igdbId?: number, title?: string) {
-  // Necesitamos el id numérico de IGDB. Si no vino (juego importado de Steam o
-  // agregado a mano), lo resolvemos buscando por título.
-  let gameId = igdbId
-  if (!gameId && title) {
-    const body = `search "${title.replace(/"/g, '\\"')}";
-fields id;
-limit 1;`
-    const hits = (await igdb('games', body)) as { id: number }[]
-    gameId = hits[0]?.id
-  }
-  if (!gameId) return null
-
-  const rows = (await igdb(
-    'game_time_to_beats',
-    `fields game_id, hastily, normally, completely, count;
-where game_id = ${gameId};
-limit 1;`
-  )) as TimeToBeatRow[]
-
-  const row = rows[0]
-  if (!row) return null
-
+function mapTtb(row: TimeToBeatRow) {
   const result = {
     hastilyHours: toHours(row.hastily),
     normallyHours: toHours(row.normally),
@@ -164,6 +142,44 @@ limit 1;`
     return null
   }
   return result
+}
+
+async function timeToBeat(igdbId?: number, title?: string) {
+  // Ids candidatos: el de IGDB si vino, si no los primeros resultados de buscar
+  // por título (un juego importado de Steam o agregado a mano no tiene igdb_id).
+  // Buscamos varios porque el primer match suele ser una edición/spin-off sin
+  // datos (ej. "Hollow Knight: Silksong" en vez de "Hollow Knight").
+  let candidateIds: number[] = []
+  if (igdbId) {
+    candidateIds = [igdbId]
+  } else if (title) {
+    const hits = (await igdb(
+      'games',
+      `search "${title.replace(/"/g, '\\"')}";
+fields id;
+limit 5;`
+    )) as { id: number }[]
+    candidateIds = hits.map((h) => h.id)
+  }
+  if (candidateIds.length === 0) return null
+
+  const rows = (await igdb(
+    'game_time_to_beats',
+    `fields game_id, hastily, normally, completely, count;
+where game_id = (${candidateIds.join(',')});
+limit ${candidateIds.length};`
+  )) as TimeToBeatRow[]
+  if (rows.length === 0) return null
+
+  // Preferimos el primer candidato (mejor match de nombre) que tenga datos;
+  // si ninguno de esos sirve, el que tenga más registros.
+  const byId = new Map(rows.map((r) => [r.game_id, r]))
+  for (const id of candidateIds) {
+    const mapped = byId.get(id) && mapTtb(byId.get(id)!)
+    if (mapped) return mapped
+  }
+  const best = [...rows].sort((a, b) => (b.count ?? 0) - (a.count ?? 0))[0]
+  return mapTtb(best)
 }
 
 serve(async (req) => {
