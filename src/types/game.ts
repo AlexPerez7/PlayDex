@@ -23,6 +23,13 @@ export interface Game {
   summary: string | null
   first_release_date: number | null
   steam_appid: number | null
+  story_percent: number
+  general_percent: number
+  completionist_percent: number
+  is_favorite: boolean
+  format: string | null
+  replays: number
+  franchise: string | null
   created_at: string
 }
 

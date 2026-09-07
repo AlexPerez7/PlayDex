@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { BookOpen, Layers, Trophy } from 'lucide-react'
 import { getTimeToBeat } from '../lib/igdb'
 import type { TimeToBeat as TimeToBeatData } from '../types/game'
 import { Skeleton } from './Skeleton'
@@ -31,23 +32,28 @@ export function TimeToBeat({
   if (data === null) return null
 
   const items = [
-    { label: 'Rápido', hours: data.hastilyHours },
-    { label: 'Normal', hours: data.normallyHours },
-    { label: 'Completista', hours: data.completelyHours },
+    { icon: BookOpen, label: 'Rápido', hours: data.hastilyHours },
+    { icon: Layers, label: 'Normal', hours: data.normallyHours },
+    { icon: Trophy, label: 'Completista', hours: data.completelyHours },
   ].filter((i) => i.hours != null)
 
   if (items.length === 0) return null
 
   return (
     <div>
-      <div className="grid grid-cols-3 gap-2">
-        {items.map((i) => (
+      <div className="flex flex-col">
+        {items.map((i, idx) => (
           <div
             key={i.label}
-            className="rounded-md bg-background-surface p-2 text-center ring-1 ring-primary-dark/30"
+            className={`flex items-center gap-3 py-2.5 ${
+              idx > 0 ? 'border-t border-primary-dark/20' : ''
+            }`}
           >
-            <p className="text-sm font-medium text-ink">{i.hours}h</p>
-            <p className="text-xs text-lavender">{i.label}</p>
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-primary-dark/20">
+              <i.icon size={16} className="text-lavender" />
+            </div>
+            <span className="flex-1 text-sm text-ink">{i.label}</span>
+            <span className="text-sm font-medium text-ink">{i.hours}h</span>
           </div>
         ))}
       </div>
