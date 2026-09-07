@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import {
   BookOpen,
   Calendar,
+  Check,
   ChevronDown,
   ClipboardList,
   Clock,
@@ -32,7 +33,7 @@ import { StarRating } from '../components/StarRating'
 import { TagList } from '../components/TagList'
 import { PlatformPicker } from '../components/PlatformPicker'
 import { FormatPicker } from '../components/FormatPicker'
-import { StatusPicker } from '../components/StatusPicker'
+import { BottomSheet } from '../components/BottomSheet'
 import { ProgressRing } from '../components/ProgressRing'
 import { SectionCard } from '../components/SectionCard'
 import { GameDeals } from '../components/GameDeals'
@@ -40,7 +41,7 @@ import { GameThumb } from '../components/GameThumb'
 import { TimeToBeat } from '../components/TimeToBeat'
 import { Skeleton } from '../components/Skeleton'
 import { PageContainer } from '../components/PageContainer'
-import { statusColors, statusLabels } from '../lib/status'
+import { statusColors, statusIcons, statusLabels, statuses } from '../lib/status'
 import type { Game } from '../types/game'
 
 function todayISO() {
@@ -252,20 +253,47 @@ export function GameDetail() {
           )}
 
           <div className="mb-5 mt-3 flex items-center gap-2">
-            <div className="relative">
-              <button
-                onClick={() => setStatusOpen((v) => !v)}
-                className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium ${statusColors[status]}`}
-              >
-                {statusLabels[status]}
-                <ChevronDown size={14} />
-              </button>
-              {statusOpen && (
-                <div className="absolute left-0 top-full z-10 mt-2 w-64 max-w-[calc(100vw-3rem)] rounded-xl bg-background-surface p-2 shadow-lg ring-1 ring-primary-dark/30">
-                  <StatusPicker value={status} onChange={handleStatusChange} />
-                </div>
-              )}
-            </div>
+            <button
+              onClick={() => setStatusOpen(true)}
+              className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium ${statusColors[status]}`}
+            >
+              {statusLabels[status]}
+              <ChevronDown size={14} />
+            </button>
+            <BottomSheet
+              open={statusOpen}
+              onClose={() => setStatusOpen(false)}
+              title="Cambiar estado"
+            >
+              <div className="flex flex-col gap-1">
+                {statuses.map((s) => {
+                  const StatusIcon = statusIcons[s]
+                  const active = s === status
+                  return (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => handleStatusChange(s)}
+                      className={`flex items-center gap-3 rounded-xl px-3 py-3 text-left ${
+                        active ? 'bg-accent/10' : 'active:bg-primary-dark/10'
+                      }`}
+                    >
+                      <span
+                        className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full ${statusColors[s]}`}
+                      >
+                        <StatusIcon size={18} />
+                      </span>
+                      <span
+                        className={`flex-1 text-sm font-medium ${active ? 'text-accent' : 'text-ink'}`}
+                      >
+                        {statusLabels[s]}
+                      </span>
+                      {active && <Check size={18} className="text-accent" />}
+                    </button>
+                  )
+                })}
+              </div>
+            </BottomSheet>
             <button
               onClick={toggleFavorite}
               className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full ring-1 ring-primary-dark/30 ${

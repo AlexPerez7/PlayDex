@@ -1,3 +1,4 @@
+import { Ban, Gamepad2, Layers, Pause, Trophy, type LucideIcon } from 'lucide-react'
 import type { GameStatus } from '../types/game'
 
 export const statuses: GameStatus[] = [
@@ -22,4 +23,12 @@ export const statusColors: Record<GameStatus, string> = {
   completado: 'bg-lavender text-primary-darker',
   abandonado: 'bg-background-surface text-lavender ring-1 ring-primary-dark',
   en_pausa: 'bg-primary text-white',
+}
+
+export const statusIcons: Record<GameStatus, LucideIcon> = {
+  pendiente: Layers,
+  jugando: Gamepad2,
+  completado: Trophy,
+  abandonado: Ban,
+  en_pausa: Pause,
 }
