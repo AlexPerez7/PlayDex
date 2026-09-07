@@ -1,5 +1,15 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import {
+  CheckCircle2,
+  Flame,
+  Gamepad2,
+  Joystick,
+  Star,
+  Tag,
+  Timer,
+  type LucideIcon,
+} from 'lucide-react'
 import { useGames } from '../hooks/useGames'
 import { StatsCard } from '../components/StatsCard'
 import { StatsCardSkeleton } from '../components/Skeleton'
@@ -43,10 +53,10 @@ export function Dashboard() {
   }, [games])
 
   const highlights = [
-    stats.topGenre && { icon: '🏷️', label: 'Género favorito', value: stats.topGenre },
-    stats.topRated && { icon: '⭐', label: 'Mejor puntuado', value: stats.topRated.title },
-    stats.mostPlayed && { icon: '🔥', label: 'Más jugado', value: stats.mostPlayed.title },
-  ].filter(Boolean) as { icon: string; label: string; value: string }[]
+    stats.topGenre && { icon: Tag, label: 'Género favorito', value: stats.topGenre },
+    stats.topRated && { icon: Star, label: 'Mejor puntuado', value: stats.topRated.title },
+    stats.mostPlayed && { icon: Flame, label: 'Más jugado', value: stats.mostPlayed.title },
+  ].filter(Boolean) as { icon: LucideIcon; label: string; value: string }[]
 
   return (
     <PageContainer>
@@ -66,13 +76,13 @@ export function Dashboard() {
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <StatsCard label="Juegos totales" value={stats.total} icon="🎮" />
-            <StatsCard label="Completados" value={stats.completados} icon="✅" />
-            <StatsCard label="En curso" value={stats.jugando} icon="🕹️" />
+            <StatsCard label="Juegos totales" value={stats.total} icon={Gamepad2} />
+            <StatsCard label="Completados" value={stats.completados} icon={CheckCircle2} />
+            <StatsCard label="En curso" value={stats.jugando} icon={Joystick} />
             <StatsCard
               label="Horas totales"
               value={`${stats.totalHoras}h`}
-              icon="⏱️"
+              icon={Timer}
             />
           </div>
 
@@ -83,8 +93,8 @@ export function Dashboard() {
                   key={h.label}
                   className="flex items-center justify-between gap-3 rounded-lg bg-slate-900 p-3 ring-1 ring-slate-800"
                 >
-                  <span className="flex-shrink-0 text-sm text-slate-400">
-                    {h.icon} {h.label}
+                  <span className="flex flex-shrink-0 items-center gap-1.5 text-sm text-slate-400">
+                    <h.icon size={16} /> {h.label}
                   </span>
                   <span className="truncate text-sm font-medium text-slate-100">
                     {h.value}

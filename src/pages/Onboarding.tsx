@@ -1,18 +1,20 @@
+import { BarChart3, ClipboardList, Download } from 'lucide-react'
+
 const features = [
   {
-    icon: '📋',
+    Icon: ClipboardList,
     title: 'Gestiona tu biblioteca',
     description:
       'Lleva un registro de todos tus juegos: pendientes, jugando, completados y más. Nunca pierdas de vista tu backlog.',
   },
   {
-    icon: '📥',
+    Icon: Download,
     title: 'Importa desde Steam',
     description:
       'Trae tu biblioteca de Steam en segundos y suma horas jugadas y capturas automáticamente.',
   },
   {
-    icon: '📊',
+    Icon: BarChart3,
     title: 'Sigue tu progreso',
     description:
       'Consulta estadísticas de horas jugadas, puntajes y hábitos de juego desde tu dashboard.',
@@ -33,9 +35,9 @@ export function Onboarding({ onFinish }: { onFinish: () => void }) {
         <h1 className="text-4xl font-bold text-emerald-400">PlayDex</h1>
 
         <div className="mt-10 flex w-full max-w-sm flex-col gap-6">
-          {features.map(({ icon, title, description }) => (
+          {features.map(({ Icon, title, description }) => (
             <div key={title} className="flex items-start gap-4">
-              <span className="text-2xl">{icon}</span>
+              <Icon className="mt-0.5 shrink-0 text-emerald-400" size={24} />
               <div>
                 <h2 className="font-semibold text-slate-100">{title}</h2>
                 <p className="mt-0.5 text-sm text-slate-400">{description}</p>

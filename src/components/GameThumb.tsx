@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Gamepad2 } from 'lucide-react'
 
 interface GameThumbProps {
   src: string | null
@@ -30,9 +31,9 @@ export function GameThumb({
   if (index >= chain.length) {
     return (
       <div
-        className={`flex items-center justify-center bg-slate-800 ${className} ${placeholderClassName}`}
+        className={`flex items-center justify-center bg-slate-800 text-slate-600 ${className} ${placeholderClassName}`}
       >
-        🎮
+        <Gamepad2 className="h-[1em] w-[1em]" />
       </div>
     )
   }
