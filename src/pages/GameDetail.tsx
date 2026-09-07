@@ -36,6 +36,11 @@ export function GameDetail() {
   const [sessionDate, setSessionDate] = useState(todayISO())
   const [sessionError, setSessionError] = useState<string | null>(null)
 
+  // Texto crudo del input de horas mientras se edita (null = mostrar el valor
+  // del modelo). Sin esto, un input controlado de type="number" no deja borrar
+  // el 0 ni escribir "7." como paso intermedio hacia "7.5".
+  const [hoursText, setHoursText] = useState<string | null>(null)
+
   const current = form ?? game
 
   async function handleSave() {
@@ -216,12 +221,19 @@ export function GameDetail() {
                 <label className="mb-1 block text-sm text-slate-400">Horas jugadas</label>
                 <input
                   type="number"
+                  inputMode="decimal"
                   min={0}
                   step="0.5"
-                  value={current?.hours_played ?? 0}
-                  onChange={(e) =>
-                    setForm({ ...(form ?? game), hours_played: Number(e.target.value) })
-                  }
+                  value={hoursText ?? String(current?.hours_played ?? 0)}
+                  onChange={(e) => {
+                    const raw = e.target.value
+                    setHoursText(raw)
+                    const parsed = raw === '' ? 0 : Number(raw)
+                    if (!Number.isNaN(parsed)) {
+                      setForm({ ...(form ?? game), hours_played: parsed })
+                    }
+                  }}
+                  onBlur={() => setHoursText(null)}
                   className="w-full rounded-md bg-slate-900 px-3 py-2.5 text-slate-100 ring-1 ring-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600"
                 />
               </div>
