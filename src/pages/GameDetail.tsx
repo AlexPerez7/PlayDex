@@ -7,6 +7,7 @@ import { StarRating } from '../components/StarRating'
 import { TagList } from '../components/TagList'
 import { PlatformPicker } from '../components/PlatformPicker'
 import { StatusPicker } from '../components/StatusPicker'
+import { GameDeals } from '../components/GameDeals'
 import { Skeleton } from '../components/Skeleton'
 import { PageContainer } from '../components/PageContainer'
 import type { Game } from '../types/game'
@@ -168,6 +169,15 @@ export function GameDetail() {
               onChange={(status) => setForm({ ...(form ?? game), status })}
             />
           </div>
+
+          {current?.status === 'pendiente' && (
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-slate-300">
+                Dónde comprarlo
+              </label>
+              <GameDeals title={game.title} />
+            </div>
+          )}
 
           <div className="border-t border-slate-800 pt-5">
             <h2 className="mb-3 text-sm font-medium text-slate-300">Tu progreso</h2>
