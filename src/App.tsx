@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 import { GamesProvider } from './contexts/GamesContext'
@@ -14,9 +15,15 @@ import { Timeline } from './pages/Timeline'
 import { SteamImport } from './pages/SteamImport'
 import { SteamCallback } from './pages/SteamCallback'
 import { Login } from './pages/Login'
+import { Onboarding } from './pages/Onboarding'
+
+const ONBOARDING_KEY = 'playdex_onboarding_seen'
 
 function App() {
   const { session, loading } = useAuth()
+  const [onboardingSeen, setOnboardingSeen] = useState(
+    () => localStorage.getItem(ONBOARDING_KEY) === 'true'
+  )
 
   if (loading) {
     return (
@@ -27,6 +34,16 @@ function App() {
   }
 
   if (!session) {
+    if (!onboardingSeen) {
+      return (
+        <Onboarding
+          onFinish={() => {
+            localStorage.setItem(ONBOARDING_KEY, 'true')
+            setOnboardingSeen(true)
+          }}
+        />
+      )
+    }
     return <Login />
   }
 
