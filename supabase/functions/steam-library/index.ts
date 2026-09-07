@@ -70,7 +70,7 @@ serve(async (req) => {
         appid: g.appid,
         name: g.name.trim(),
         hours_played: Math.round((g.playtime_forever / 60) * 10) / 10,
-        cover_url: `https://cdn.akamai.steamstatic.com/steam/apps/${g.appid}/header.jpg`,
+        cover_url: `https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/header.jpg`,
       }))
 
     return jsonResponse(results)

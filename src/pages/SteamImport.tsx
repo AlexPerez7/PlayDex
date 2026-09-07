@@ -12,6 +12,7 @@ import {
 import { useGames } from '../hooks/useGames'
 import { PageContainer } from '../components/PageContainer'
 import { PopularCardSkeleton } from '../components/Skeleton'
+import { GameThumb } from '../components/GameThumb'
 
 function PrivacyNote() {
   return (
@@ -169,11 +170,14 @@ export function SteamImport() {
                     key={game.appid}
                     className="flex items-center gap-3 rounded-lg bg-slate-900 p-2 ring-1 ring-slate-800"
                   >
-                    <img
+                    <GameThumb
                       src={game.cover_url}
                       alt={game.name}
-                      loading="lazy"
+                      fallbacks={[
+                        `https://cdn.cloudflare.steamstatic.com/steam/apps/${game.appid}/library_hero.jpg`,
+                      ]}
                       className="h-12 w-24 flex-shrink-0 rounded object-cover"
+                      placeholderClassName="text-lg"
                     />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-slate-100">

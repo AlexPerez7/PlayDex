@@ -8,6 +8,7 @@ import { TagList } from '../components/TagList'
 import { PlatformPicker } from '../components/PlatformPicker'
 import { StatusPicker } from '../components/StatusPicker'
 import { GameDeals } from '../components/GameDeals'
+import { GameThumb } from '../components/GameThumb'
 import { TimeToBeat } from '../components/TimeToBeat'
 import { Skeleton } from '../components/Skeleton'
 import { PageContainer } from '../components/PageContainer'
@@ -131,11 +132,12 @@ export function GameDetail() {
       <div className="mx-auto md:max-w-xl">
         <div className="mb-4 flex gap-3">
           <div className="h-32 w-24 flex-shrink-0 overflow-hidden rounded bg-slate-800 md:h-48 md:w-36">
-            {game.cover_url ? (
-              <img src={game.cover_url} alt={game.title} className="h-full w-full object-cover" />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-3xl">🎮</div>
-            )}
+            <GameThumb
+              src={game.cover_url}
+              alt={game.title}
+              className="h-full w-full object-cover"
+              placeholderClassName="text-3xl"
+            />
           </div>
           <div className="min-w-0">
             <h1 className="text-xl font-semibold">{game.title}</h1>

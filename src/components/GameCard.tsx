@@ -1,4 +1,5 @@
 import { TagList } from './TagList'
+import { GameThumb } from './GameThumb'
 import { statusLabels, statusColors } from '../lib/status'
 import type { Game } from '../types/game'
 
@@ -14,18 +15,12 @@ export function GameCard({ game, onClick }: GameCardProps) {
       className="flex w-full items-center gap-3 rounded-lg bg-slate-900 p-3 text-left shadow-sm ring-1 ring-slate-800 active:scale-[0.99]"
     >
       <div className="h-20 w-14 flex-shrink-0 overflow-hidden rounded bg-slate-800">
-        {game.cover_url ? (
-          <img
-            src={game.cover_url}
-            alt={game.title}
-            loading="lazy"
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-2xl">
-            🎮
-          </div>
-        )}
+        <GameThumb
+          src={game.cover_url}
+          alt={game.title}
+          className="h-full w-full object-cover"
+          placeholderClassName="text-2xl"
+        />
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium text-slate-100">{game.title}</p>
