@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Gamepad2 } from 'lucide-react'
 import { getPopularGames, igdbResultToNewGame } from '../lib/igdb'
 import { useGames } from '../hooks/useGames'
 import { PageContainer } from '../components/PageContainer'
@@ -130,8 +131,8 @@ export function Home() {
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center text-2xl">
-                    🎮
+                  <div className="flex h-full w-full items-center justify-center">
+                    <Gamepad2 className="text-slate-600" size={28} />
                   </div>
                 )}
               </div>

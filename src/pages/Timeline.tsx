@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Flag, Play, Plus, Timer, type LucideIcon } from 'lucide-react'
 import { supabase, ensureSession } from '../lib/supabaseClient'
 import { useGames } from '../hooks/useGames'
 import { PageContainer } from '../components/PageContainer'
 
 interface TimelineEvent {
   date: string
-  icon: string
+  icon: LucideIcon
   text: string
   gameId: string
 }
@@ -46,14 +47,14 @@ export function Timeline() {
   for (const g of games) {
     events.push({
       date: g.created_at,
-      icon: '➕',
+      icon: Plus,
       text: `Agregaste ${g.title} a tu biblioteca`,
       gameId: g.id,
     })
     if (g.date_started) {
       events.push({
         date: g.date_started,
-        icon: '▶️',
+        icon: Play,
         text: `Empezaste a jugar ${g.title}`,
         gameId: g.id,
       })
@@ -61,7 +62,7 @@ export function Timeline() {
     if (g.date_finished) {
       events.push({
         date: g.date_finished,
-        icon: '🏁',
+        icon: Flag,
         text: `Completaste ${g.title}`,
         gameId: g.id,
       })
@@ -71,7 +72,7 @@ export function Timeline() {
   for (const s of sessions) {
     events.push({
       date: s.played_at,
-      icon: '⏱️',
+      icon: Timer,
       text: `Jugaste ${s.duration_minutes} min de ${s.games?.title ?? 'un juego'}`,
       gameId: s.game_id,
     })
@@ -102,7 +103,7 @@ export function Timeline() {
               onClick={() => navigate(`/game/${e.gameId}`)}
               className="flex w-full items-start gap-3 rounded-lg bg-slate-900 p-3 text-left ring-1 ring-slate-800"
             >
-              <span className="text-lg">{e.icon}</span>
+              <e.icon className="mt-0.5 shrink-0 text-emerald-400" size={20} />
               <div className="min-w-0 flex-1">
                 <p className="text-sm text-slate-100">{e.text}</p>
                 <p className="text-xs text-slate-500">
