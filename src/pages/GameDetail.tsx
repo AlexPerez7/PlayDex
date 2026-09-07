@@ -8,6 +8,7 @@ import { TagList } from '../components/TagList'
 import { PlatformPicker } from '../components/PlatformPicker'
 import { StatusPicker } from '../components/StatusPicker'
 import { GameDeals } from '../components/GameDeals'
+import { HowLongToBeat } from '../components/HowLongToBeat'
 import { Skeleton } from '../components/Skeleton'
 import { PageContainer } from '../components/PageContainer'
 import type { Game } from '../types/game'
@@ -150,6 +151,10 @@ export function GameDetail() {
         {game.summary && (
           <p className="mb-4 text-sm text-slate-400">{game.summary}</p>
         )}
+
+        <div className="mb-5">
+          <HowLongToBeat title={game.title} />
+        </div>
 
         <div className="flex flex-col gap-5">
           <div>
