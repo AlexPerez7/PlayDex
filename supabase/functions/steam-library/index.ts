@@ -1,13 +1,13 @@
 // Edge Function: trae la biblioteca de Steam del usuario (juegos + horas jugadas).
-// Secrets requeridos (nunca en el frontend):
-//   supabase secrets set STEAM_API_KEY=xxx STEAM_ID=xxx
-// STEAM_ID puede ser el SteamID64 numerico o el nombre de la URL personalizada
-// (ej. "Alekay7" de steamcommunity.com/id/Alekay7) - se resuelve automaticamente.
+// El SteamID64 se lee de la fila `profiles` del usuario que llama (vinculada
+// antes vía la función steam-auth / "Sign in through Steam").
+// Secret requerido:
+//   supabase secrets set STEAM_API_KEY=xxx
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
 import { handlePreflight, jsonResponse, errorResponse } from '../_shared/http.ts'
+import { userClient } from '../_shared/supabase.ts'
 
 const STEAM_API_KEY = Deno.env.get('STEAM_API_KEY')!
-const STEAM_ID_OR_VANITY = Deno.env.get('STEAM_ID')!
 
 interface SteamGame {
   appid: number
@@ -15,31 +15,30 @@ interface SteamGame {
   playtime_forever: number
 }
 
-async function resolveSteamId(): Promise<string> {
-  if (/^\d+$/.test(STEAM_ID_OR_VANITY)) {
-    return STEAM_ID_OR_VANITY
-  }
-  const params = new URLSearchParams({
-    key: STEAM_API_KEY,
-    vanityurl: STEAM_ID_OR_VANITY,
-  })
-  const res = await fetch(
-    `https://api.steampowered.com/ISteamUser/ResolveVanityURL/v0001/?${params}`
-  )
-  if (!res.ok) throw new Error(`No se pudo resolver el usuario de Steam (${res.status})`)
-  const data = await res.json()
-  if (data.response?.success !== 1) {
-    throw new Error('No se encontro ese usuario de Steam. Revisa STEAM_ID.')
-  }
-  return data.response.steamid as string
-}
-
 serve(async (req) => {
   const preflight = handlePreflight(req)
   if (preflight) return preflight
 
   try {
-    const steamId = await resolveSteamId()
+    const supa = userClient(req)
+    const {
+      data: { user },
+    } = await supa.auth.getUser()
+    if (!user) return jsonResponse({ error: 'No autenticado.' }, 401)
+
+    const { data: profile } = await supa
+      .from('profiles')
+      .select('steam_id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    const steamId = profile?.steam_id
+    if (!steamId) {
+      return jsonResponse(
+        { error: 'Conectá tu cuenta de Steam primero.' },
+        400
+      )
+    }
 
     const params = new URLSearchParams({
       key: STEAM_API_KEY,
@@ -61,7 +60,7 @@ serve(async (req) => {
 
     if (games.length === 0) {
       throw new Error(
-        'Steam no devolvio juegos. Revisa que el perfil (o al menos "Detalles del juego") este publico.'
+        'Steam no devolvió juegos. Revisá que en la privacidad de tu perfil de Steam, "Mi perfil" y "Detalles del juego" estén en Público.'
       )
     }
 

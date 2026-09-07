@@ -1,0 +1,126 @@
+// Edge Function: "Sign in through Steam" (OpenID 2.0).
+// Steam no tiene OAuth; OpenID solo devuelve el SteamID64 (número público), no
+// da token ni acceso a la API. La API key sigue siendo de la app (STEAM_API_KEY).
+//
+// Secrets requeridos:
+//   supabase secrets set STEAM_API_KEY=xxx
+//
+// Acciones (campo `action` en el body, ambas requieren usuario autenticado):
+//   - "start"  { returnTo }  -> devuelve { url } para redirigir el navegador a Steam
+//   - "verify" { params }    -> params = todos los openid.* que Steam mandó al
+//                               volver; valida la firma con Steam, saca el
+//                               SteamID64 y lo guarda en profiles del usuario.
+import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
+import { handlePreflight, jsonResponse, errorResponse } from '../_shared/http.ts'
+import { userClient } from '../_shared/supabase.ts'
+
+const STEAM_OPENID = 'https://steamcommunity.com/openid/login'
+const STEAM_API_KEY = Deno.env.get('STEAM_API_KEY')!
+
+function buildLoginUrl(returnTo: string): string {
+  const realm = new URL(returnTo).origin
+  const p = new URLSearchParams({
+    'openid.ns': 'http://specs.openid.net/auth/2.0',
+    'openid.mode': 'checkid_setup',
+    'openid.return_to': returnTo,
+    'openid.realm': realm,
+    'openid.identity': 'http://specs.openid.net/auth/2.0/identifier_select',
+    'openid.claimed_id': 'http://specs.openid.net/auth/2.0/identifier_select',
+  })
+  return `${STEAM_OPENID}?${p}`
+}
+
+/** Valida la respuesta de OpenID contra Steam y devuelve el SteamID64. */
+async function verifyAssertion(params: Record<string, string>): Promise<string> {
+  const body = new URLSearchParams(params)
+  body.set('openid.mode', 'check_authentication')
+
+  const res = await fetch(STEAM_OPENID, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body,
+  })
+  const text = await res.text()
+  if (!/is_valid\s*:\s*true/i.test(text)) {
+    throw new Error('No se pudo verificar el inicio de sesión de Steam.')
+  }
+
+  const claimed = params['openid.claimed_id'] ?? params['openid.identity'] ?? ''
+  const match = claimed.match(/^https:\/\/steamcommunity\.com\/openid\/id\/(\d{17})$/)
+  if (!match) {
+    throw new Error('Respuesta de Steam inesperada (no se encontró el SteamID).')
+  }
+  return match[1]
+}
+
+interface SteamPlayer {
+  personaname?: string
+  avatarmedium?: string
+  communityvisibilitystate?: number
+}
+
+async function fetchPlayer(steamId: string): Promise<SteamPlayer | null> {
+  try {
+    const res = await fetch(
+      `https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key=${STEAM_API_KEY}&steamids=${steamId}`
+    )
+    if (!res.ok) return null
+    const data = await res.json()
+    return data.response?.players?.[0] ?? null
+  } catch {
+    return null
+  }
+}
+
+serve(async (req) => {
+  const preflight = handlePreflight(req)
+  if (preflight) return preflight
+
+  try {
+    const supa = userClient(req)
+    const {
+      data: { user },
+    } = await supa.auth.getUser()
+    if (!user) return jsonResponse({ error: 'No autenticado.' }, 401)
+
+    const { action, returnTo, params } = await req.json().catch(() => ({}))
+
+    if (action === 'start') {
+      if (typeof returnTo !== 'string' || !returnTo.startsWith('https://')) {
+        return jsonResponse({ error: 'returnTo inválido (debe ser https).' }, 400)
+      }
+      return jsonResponse({ url: buildLoginUrl(returnTo) })
+    }
+
+    if (action === 'verify') {
+      if (!params || typeof params !== 'object') {
+        return jsonResponse({ error: 'Faltan los parámetros de OpenID.' }, 400)
+      }
+      const steamId = await verifyAssertion(params as Record<string, string>)
+      const player = await fetchPlayer(steamId)
+
+      const { error } = await supa.from('profiles').upsert({
+        user_id: user.id,
+        steam_id: steamId,
+        steam_persona: player?.personaname ?? null,
+        steam_avatar: player?.avatarmedium ?? null,
+        updated_at: new Date().toISOString(),
+      })
+      if (error) throw new Error(`No se pudo guardar el perfil: ${error.message}`)
+
+      return jsonResponse({
+        steamId,
+        persona: player?.personaname ?? null,
+        avatar: player?.avatarmedium ?? null,
+        // communityvisibilitystate: 3 = público, 1 = privado. Aun siendo
+        // público, "Detalles del juego" puede estar oculto por separado; eso
+        // solo se detecta al intentar leer la biblioteca.
+        isPublic: player?.communityvisibilitystate === 3,
+      })
+    }
+
+    return jsonResponse({ error: 'action debe ser "start" o "verify".' }, 400)
+  } catch (err) {
+    return errorResponse(err)
+  }
+})
