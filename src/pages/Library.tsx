@@ -42,21 +42,31 @@ function ChipRow<T extends string>({
   labelFor: (v: T) => string
 }) {
   return (
-    <div className="flex gap-2 overflow-x-auto pb-1">
-      {options.map((opt) => (
-        <button
-          key={opt}
-          type="button"
-          onClick={() => onChange(opt)}
-          className={`whitespace-nowrap rounded-full px-3 py-1 text-xs ${
-            value === opt
-              ? 'bg-emerald-600 text-slate-950'
-              : 'bg-slate-900 text-slate-400 ring-1 ring-slate-800'
-          }`}
-        >
-          {labelFor(opt)}
-        </button>
-      ))}
+    <div className="relative -mx-4">
+      <div className="scrollbar-hide flex gap-2 overflow-x-auto px-4 pb-1">
+        {options.map((opt) => (
+          <button
+            key={opt}
+            type="button"
+            onClick={() => onChange(opt)}
+            className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+              value === opt
+                ? 'bg-emerald-600 text-slate-950'
+                : 'bg-slate-900 text-slate-400 ring-1 ring-slate-800 active:bg-slate-800'
+            }`}
+          >
+            {labelFor(opt)}
+          </button>
+        ))}
+        <div className="shrink-0 basis-2" aria-hidden="true" />
+      </div>
+      <div
+        className="pointer-events-none absolute inset-y-0 right-0 w-8"
+        style={{
+          background:
+            'linear-gradient(to left, var(--color-slate-950, #020617), transparent)',
+        }}
+      />
     </div>
   )
 }
