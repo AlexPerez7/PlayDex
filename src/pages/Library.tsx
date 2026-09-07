@@ -158,7 +158,7 @@ export function Library() {
         />
       </div>
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-error">{error}</p>}
 
       {loading ? (
         <GameCardGridSkeleton />

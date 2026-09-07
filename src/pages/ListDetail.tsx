@@ -38,7 +38,7 @@ export function ListDetail() {
             <GameCard game={game} onClick={(g) => navigate(`/game/${g.id}`)} />
             <button
               onClick={() => removeGame(game.id)}
-              className="self-end text-xs text-red-400"
+              className="self-end text-xs text-error"
             >
               Quitar de la lista
             </button>

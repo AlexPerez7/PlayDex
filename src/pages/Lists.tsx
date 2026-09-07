@@ -74,7 +74,7 @@ export function Lists() {
             </button>
             <button
               onClick={() => handleDelete(list.id, list.name)}
-              className="flex-shrink-0 text-xs text-red-400"
+              className="flex-shrink-0 text-xs text-error"
             >
               Eliminar
             </button>

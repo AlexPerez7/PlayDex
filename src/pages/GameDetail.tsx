@@ -277,7 +277,7 @@ export function GameDetail() {
             </div>
           </div>
 
-          {error && <p className="text-sm text-red-400">{error}</p>}
+          {error && <p className="text-sm text-error">{error}</p>}
 
           <div className="flex gap-3">
             <button
@@ -289,7 +289,7 @@ export function GameDetail() {
             </button>
             <button
               onClick={handleDelete}
-              className="rounded-md bg-red-900 px-4 py-3 text-sm font-medium text-red-100"
+              className="rounded-md bg-error/20 px-4 py-3 text-sm font-medium text-error"
             >
               Eliminar
             </button>
@@ -357,7 +357,7 @@ export function GameDetail() {
                 </button>
               </div>
             </div>
-            {sessionError && <p className="mb-2 text-sm text-red-400">{sessionError}</p>}
+            {sessionError && <p className="mb-2 text-sm text-error">{sessionError}</p>}
 
             {sessions.length === 0 ? (
               <p className="text-sm text-lavender">Todavía no registraste sesiones.</p>
@@ -373,7 +373,7 @@ export function GameDetail() {
                     </span>
                     <button
                       onClick={() => handleDeleteSession(s.id, s.duration_minutes)}
-                      className="text-xs text-red-400"
+                      className="text-xs text-error"
                     >
                       Eliminar
                     </button>

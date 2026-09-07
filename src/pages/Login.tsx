@@ -53,7 +53,7 @@ export function Login() {
           className="rounded-md bg-background-surface px-3 py-2.5 text-ink ring-1 ring-primary-dark/30 focus:outline-none focus:ring-primary"
         />
 
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && <p className="text-sm text-error">{error}</p>}
         {message && <p className="text-sm text-accent">{message}</p>}
 
         <button

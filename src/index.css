@@ -9,6 +9,8 @@
   --color-background: #14091f;
   --color-background-surface: #1f1330;
   --color-ink: #f5f3ff;
+  --color-error: #f2545b;
+  --color-warning: #f5a623;
 }
 
 :root {

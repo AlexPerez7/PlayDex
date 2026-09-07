@@ -159,7 +159,7 @@ export function GameForm({ onSubmit, existingIgdbIds }: GameFormProps) {
               <TagList value={form.genre} />
             </div>
             {owned && (
-              <p className="mt-1.5 text-xs text-amber-400">
+              <p className="mt-1.5 text-xs text-warning">
                 Ya está en tu biblioteca. Puedes agregarlo igual si quieres otra copia.
               </p>
             )}
@@ -205,7 +205,7 @@ export function GameForm({ onSubmit, existingIgdbIds }: GameFormProps) {
         />
       </div>
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-error">{error}</p>}
 
       <button
         type="submit"

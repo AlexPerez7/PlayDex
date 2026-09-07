@@ -41,9 +41,9 @@ export function SteamCallback() {
 
   const color =
     status === 'error'
-      ? 'text-red-400'
+      ? 'text-error'
       : status === 'warn'
-        ? 'text-amber-400'
+        ? 'text-warning'
         : 'text-lavender'
 
   return (

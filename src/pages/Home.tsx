@@ -110,7 +110,7 @@ export function Home() {
         Juegos con más repercusión salidos en los últimos 2 años
       </p>
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-error">{error}</p>}
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {loading &&

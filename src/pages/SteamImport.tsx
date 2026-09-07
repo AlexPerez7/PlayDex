@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { SiSteam } from 'react-icons/si'
 import {
   disconnectSteam,
   getSteamLibrary,
@@ -116,11 +117,12 @@ export function SteamImport() {
           <button
             onClick={handleConnect}
             disabled={connecting}
-            className="rounded-md bg-[#1b2838] px-4 py-3 text-sm font-medium text-white ring-1 ring-white/10 disabled:opacity-50"
+            className="flex items-center justify-center gap-2 rounded-md bg-[#1b2838] px-4 py-3 text-sm font-medium text-white ring-1 ring-white/10 disabled:opacity-50"
           >
+            <SiSteam size={18} />
             {connecting ? 'Redirigiendo a Steam...' : 'Iniciar sesión con Steam'}
           </button>
-          {error && <p className="text-sm text-red-400">{error}</p>}
+          {error && <p className="text-sm text-error">{error}</p>}
         </div>
       )}
 
@@ -150,9 +152,9 @@ export function SteamImport() {
           </div>
 
           {error && (
-            <div className="mb-4 rounded-lg bg-red-950/50 p-3 text-sm text-red-300 ring-1 ring-red-900">
+            <div className="mb-4 rounded-lg bg-error/10 p-3 text-sm text-error ring-1 ring-error/40">
               <p>{error}</p>
-              <div className="mt-2 text-red-300/80">
+              <div className="mt-2 text-error/70">
                 <PrivacyNote />
               </div>
             </div>
