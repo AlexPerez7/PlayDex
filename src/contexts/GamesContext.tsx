@@ -38,7 +38,19 @@ export function GamesProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    fetchGames()
+    // onAuthStateChange dispara un evento INITIAL_SESSION apenas nos
+    // suscribimos (con la sesión ya restaurada o null), así que no hace
+    // falta un fetchGames() aparte al montar. Escuchar todos los eventos
+    // (no solo el inicial) es lo que evita que la biblioteca quede vacía
+    // hasta refrescar: si este provider ya estaba montado sin sesión
+    // cuando el usuario hace login, acá llega el SIGNED_IN posterior y
+    // dispara el refetch con el token ya listo.
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => {
+      fetchGames()
+    })
+    return () => subscription.unsubscribe()
   }, [fetchGames])
 
   const addGame = useCallback(async (game: NewGame) => {

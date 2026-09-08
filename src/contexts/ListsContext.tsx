@@ -30,7 +30,16 @@ export function ListsProvider({ children }: { children: ReactNode }) {
   }, [])
 
   useEffect(() => {
-    fetchLists()
+    // Ver el comentario equivalente en GamesContext: nos suscribimos a
+    // onAuthStateChange (que ya dispara un INITIAL_SESSION al montar) en
+    // vez de hacer un fetchLists() aparte, para no perder el refetch
+    // cuando el SIGNED_IN llega después del mount.
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(() => {
+      fetchLists()
+    })
+    return () => subscription.unsubscribe()
   }, [fetchLists])
 
   const createList = useCallback(async (name: string) => {
