@@ -86,28 +86,31 @@ export function Library() {
     return ['todas', ...Array.from(set)]
   }, [games])
 
-  const filtered = games.filter((g) => {
-    const matchesStatus = statusFilter === 'todos' || g.status === statusFilter
-    const matchesPlatform =
-      platformFilter === 'todas' || parseTags(g.platform).includes(platformFilter)
-    const matchesSearch =
-      search.trim() === '' ||
-      g.title.toLowerCase().includes(search.trim().toLowerCase())
-    return matchesStatus && matchesPlatform && matchesSearch
-  })
+  // Con bibliotecas grandes (importadas de Steam) filtrar y ordenar en cada
+  // render se nota al escribir en el buscador: se memoiza.
+  const sorted = useMemo(() => {
+    const query = search.trim().toLowerCase()
+    const filtered = games.filter((g) => {
+      const matchesStatus = statusFilter === 'todos' || g.status === statusFilter
+      const matchesPlatform =
+        platformFilter === 'todas' || parseTags(g.platform).includes(platformFilter)
+      const matchesSearch = query === '' || g.title.toLowerCase().includes(query)
+      return matchesStatus && matchesPlatform && matchesSearch
+    })
 
-  const sorted = [...filtered].sort((a, b) => {
-    switch (sortBy) {
-      case 'titulo':
-        return a.title.localeCompare(b.title)
-      case 'horas':
-        return b.hours_played - a.hours_played
-      case 'puntaje':
-        return (b.rating ?? 0) - (a.rating ?? 0)
-      default:
-        return 0
-    }
-  })
+    // 'recientes' respeta el orden en que llegan de la DB (created_at desc).
+    if (sortBy === 'recientes') return filtered
+    return filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'titulo':
+          return a.title.localeCompare(b.title)
+        case 'horas':
+          return b.hours_played - a.hours_played
+        default:
+          return (b.rating ?? 0) - (a.rating ?? 0)
+      }
+    })
+  }, [games, statusFilter, platformFilter, search, sortBy])
 
   return (
     <PageContainer>

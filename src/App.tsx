@@ -1,22 +1,40 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 import { GamesProvider } from './contexts/GamesContext'
 import { ListsProvider } from './contexts/ListsContext'
 import { ToastProvider } from './contexts/ToastContext'
 import { BottomNav } from './components/BottomNav'
-import { Home } from './pages/Home'
 import { Library } from './pages/Library'
-import { AddGame } from './pages/AddGame'
-import { Dashboard } from './pages/Dashboard'
-import { GameDetail } from './pages/GameDetail'
-import { Lists } from './pages/Lists'
-import { ListDetail } from './pages/ListDetail'
-import { Timeline } from './pages/Timeline'
-import { SteamImport } from './pages/SteamImport'
-import { SteamCallback } from './pages/SteamCallback'
-import { Login } from './pages/Login'
-import { Onboarding } from './pages/Onboarding'
+
+// La biblioteca es la pantalla de entrada y va en el bundle principal; el
+// resto se carga bajo demanda para que el primer arranque en mobile (red
+// lenta) descargue lo mínimo. El service worker las precachea igual, así que
+// después de la primera visita cargan al instante.
+const Home = lazy(() => import('./pages/Home').then((m) => ({ default: m.Home })))
+const AddGame = lazy(() => import('./pages/AddGame').then((m) => ({ default: m.AddGame })))
+const Dashboard = lazy(() => import('./pages/Dashboard').then((m) => ({ default: m.Dashboard })))
+const GameDetail = lazy(() => import('./pages/GameDetail').then((m) => ({ default: m.GameDetail })))
+const Lists = lazy(() => import('./pages/Lists').then((m) => ({ default: m.Lists })))
+const ListDetail = lazy(() => import('./pages/ListDetail').then((m) => ({ default: m.ListDetail })))
+const Timeline = lazy(() => import('./pages/Timeline').then((m) => ({ default: m.Timeline })))
+const SteamImport = lazy(() => import('./pages/SteamImport').then((m) => ({ default: m.SteamImport })))
+const SteamCallback = lazy(() => import('./pages/SteamCallback').then((m) => ({ default: m.SteamCallback })))
+const Login = lazy(() => import('./pages/Login').then((m) => ({ default: m.Login })))
+const Onboarding = lazy(() => import('./pages/Onboarding').then((m) => ({ default: m.Onboarding })))
+
+function SplashScreen() {
+  return (
+    <div className="flex min-h-dvh flex-col items-center justify-center gap-4">
+      <img
+        src="/icons/icon-192.png"
+        alt=""
+        className="h-20 w-20 animate-pulse rounded-3xl shadow-lg shadow-black/40"
+      />
+      <span className="sr-only">Cargando...</span>
+    </div>
+  )
+}
 
 const ONBOARDING_KEY = 'playdex_onboarding_seen'
 
@@ -33,49 +51,53 @@ function App() {
   // se pierden ese evento inicial y la primera consulta puede dispararse
   // en la ventana en que el cliente de Supabase todavía no terminó de
   // adjuntar el token nuevo, trayendo listas vacías hasta refrescar.
+  let content
+  if (loading) {
+    content = <SplashScreen />
+  } else if (!session) {
+    content = (
+      <Suspense fallback={<SplashScreen />}>
+        {!onboardingSeen ? (
+          <Onboarding
+            onFinish={() => {
+              localStorage.setItem(ONBOARDING_KEY, 'true')
+              setOnboardingSeen(true)
+            }}
+          />
+        ) : (
+          <Login />
+        )}
+      </Suspense>
+    )
+  } else {
+    content = (
+      <div className="min-h-dvh">
+        {/* Suspense solo alrededor de las rutas: mientras baja el chunk de
+            una pantalla, la barra de navegación sigue visible. */}
+        <Suspense fallback={null}>
+          <Routes>
+            <Route path="/" element={<Library />} />
+            <Route path="/home" element={<Home />} />
+            <Route path="/add" element={<AddGame />} />
+            <Route path="/steam-import" element={<SteamImport />} />
+            <Route path="/steam-import/callback" element={<SteamCallback />} />
+            <Route path="/game/:id" element={<GameDetail />} />
+            <Route path="/lists" element={<Lists />} />
+            <Route path="/lists/:id" element={<ListDetail />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/timeline" element={<Timeline />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Suspense>
+        <BottomNav />
+      </div>
+    )
+  }
+
   return (
     <ToastProvider>
       <GamesProvider>
-        <ListsProvider>
-          {loading ? (
-            <div className="flex min-h-dvh flex-col items-center justify-center gap-4">
-              <img
-                src="/icons/icon-192.png"
-                alt=""
-                className="h-20 w-20 animate-pulse rounded-3xl shadow-lg shadow-black/40"
-              />
-              <span className="sr-only">Cargando...</span>
-            </div>
-          ) : !session ? (
-            !onboardingSeen ? (
-              <Onboarding
-                onFinish={() => {
-                  localStorage.setItem(ONBOARDING_KEY, 'true')
-                  setOnboardingSeen(true)
-                }}
-              />
-            ) : (
-              <Login />
-            )
-          ) : (
-            <div className="min-h-screen">
-              <Routes>
-                <Route path="/" element={<Library />} />
-                <Route path="/home" element={<Home />} />
-                <Route path="/add" element={<AddGame />} />
-                <Route path="/steam-import" element={<SteamImport />} />
-                <Route path="/steam-import/callback" element={<SteamCallback />} />
-                <Route path="/game/:id" element={<GameDetail />} />
-                <Route path="/lists" element={<Lists />} />
-                <Route path="/lists/:id" element={<ListDetail />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/timeline" element={<Timeline />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-              <BottomNav />
-            </div>
-          )}
-        </ListsProvider>
+        <ListsProvider>{content}</ListsProvider>
       </GamesProvider>
     </ToastProvider>
   )

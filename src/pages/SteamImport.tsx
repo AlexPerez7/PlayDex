@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { SiSteam } from 'react-icons/si'
 import {
@@ -93,8 +93,9 @@ export function SteamImport() {
     setError(null)
   }
 
-  const importedAppIds = new Set(
-    games.map((g) => g.steam_appid).filter((id): id is number => id != null)
+  const importedAppIds = useMemo(
+    () => new Set(games.map((g) => g.steam_appid).filter((id): id is number => id != null)),
+    [games]
   )
 
   async function handleImport(game: SteamGame) {

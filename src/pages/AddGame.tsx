@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { SiSteam } from 'react-icons/si'
 import { GameForm } from '../components/GameForm'
@@ -9,8 +10,9 @@ export function AddGame() {
   const { games, addGame } = useGames()
   const navigate = useNavigate()
 
-  const existingIgdbIds = new Set(
-    games.map((g) => g.igdb_id).filter((id): id is number => id != null)
+  const existingIgdbIds = useMemo(
+    () => new Set(games.map((g) => g.igdb_id).filter((id): id is number => id != null)),
+    [games]
   )
 
   async function handleSubmit(game: NewGame) {

@@ -5,6 +5,24 @@ import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
 export default defineConfig({
+  build: {
+    rolldownOptions: {
+      output: {
+        // Librerías en chunks propios: cambian mucho menos que el código de la
+        // app, así que tras cada deploy el teléfono solo vuelve a bajar lo
+        // que realmente cambió.
+        codeSplitting: {
+          groups: [
+            { name: 'supabase', test: /node_modules[\\/]@supabase/ },
+            {
+              name: 'react',
+              test: /node_modules[\\/](react|react-dom|react-router|react-router-dom|scheduler)[\\/]/,
+            },
+          ],
+        },
+      },
+    },
+  },
   plugins: [
     react(),
     tailwindcss(),
@@ -40,9 +58,32 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // Solo cachear assets estáticos, nunca datos de Supabase
+        // Assets estáticos precacheados. Los datos de Supabase NUNCA pasan por
+        // el service worker (siempre red).
         globPatterns: ['**/*.{js,css,html,svg,png,ico}'],
-        runtimeCaching: [],
+        runtimeCaching: [
+          {
+            // Portadas de IGDB y de Steam: no cambian para una misma URL, así
+            // que se sirven desde cache (instantáneas y disponibles offline).
+            urlPattern: ({ url }) =>
+              url.hostname === 'images.igdb.com' ||
+              url.hostname.endsWith('.steamstatic.com') ||
+              url.hostname.endsWith('.steampowered.com'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'game-images',
+              // Las respuestas opacas ocupan bastante cuota en Chrome: límite
+              // moderado y purga automática si el navegador se queda sin espacio.
+              expiration: {
+                maxEntries: 300,
+                maxAgeSeconds: 60 * 60 * 24 * 60,
+                purgeOnQuotaError: true,
+              },
+              // 0 = respuestas opacas (imágenes cross-origin sin CORS).
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
       },
     }),
   ],

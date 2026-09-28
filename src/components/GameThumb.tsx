@@ -10,6 +10,8 @@ interface GameThumbProps {
   className?: string
   /** Clases extra solo para el placeholder (ej. tamaño del emoji). */
   placeholderClassName?: string
+  /** Cargar de inmediato (imágenes visibles al abrir la pantalla, ej. portada hero). */
+  eager?: boolean
 }
 
 /**
@@ -24,6 +26,7 @@ export function GameThumb({
   fallbacks = [],
   className = '',
   placeholderClassName = '',
+  eager = false,
 }: GameThumbProps) {
   const chain = src ? [src, ...fallbacks] : []
   const [index, setIndex] = useState(0)
@@ -43,7 +46,8 @@ export function GameThumb({
       key={chain[index]}
       src={chain[index]}
       alt={alt}
-      loading="lazy"
+      loading={eager ? 'eager' : 'lazy'}
+      decoding="async"
       onError={() => setIndex((i) => i + 1)}
       className={className}
     />

@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Gamepad2 } from 'lucide-react'
-import { getPopularGames, igdbResultToNewGame } from '../lib/igdb'
+import { getCachedPopularGames, getPopularGames, igdbResultToNewGame } from '../lib/igdb'
 import { useGames } from '../hooks/useGames'
 import { useToast } from '../contexts/ToastContext'
 import { PageContainer } from '../components/PageContainer'
@@ -13,8 +13,11 @@ const PULL_THRESHOLD = 60
 export function Home() {
   const { games, addGame } = useGames()
   const { showToast, showError } = useToast()
-  const [popular, setPopular] = useState<IgdbSearchResult[]>([])
-  const [loading, setLoading] = useState(true)
+  // Se pinta al instante lo último guardado; solo se muestran esqueletos la
+  // primera vez que se abre Inicio.
+  const [cached] = useState(getCachedPopularGames)
+  const [popular, setPopular] = useState<IgdbSearchResult[]>(cached?.data ?? [])
+  const [loading, setLoading] = useState(!cached)
   const [error, setError] = useState<string | null>(null)
   const [addingId, setAddingId] = useState<number | null>(null)
 
@@ -33,8 +36,9 @@ export function Home() {
   }
 
   useEffect(() => {
+    if (cached?.fresh) return
     loadPopular().finally(() => setLoading(false))
-  }, [])
+  }, [cached])
 
   useEffect(() => {
     let startY = 0
@@ -79,8 +83,9 @@ export function Home() {
     }
   }, [refreshing])
 
-  const ownedIgdbIds = new Set(
-    games.map((g) => g.igdb_id).filter((id): id is number => id != null)
+  const ownedIgdbIds = useMemo(
+    () => new Set(games.map((g) => g.igdb_id).filter((id): id is number => id != null)),
+    [games]
   )
 
   async function handleQuickAdd(result: IgdbSearchResult) {
@@ -133,6 +138,9 @@ export function Home() {
                     src={result.cover_url}
                     alt={result.name}
                     loading="lazy"
+                    decoding="async"
+                    width={264}
+                    height={352}
                     className="h-full w-full object-cover"
                   />
                 ) : (

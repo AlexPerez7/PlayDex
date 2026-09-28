@@ -51,6 +51,15 @@ import type { Game } from '../types/game'
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error'
 
+/**
+ * La portada de IGDB se guarda en `t_cover_big` (264px de ancho), que a todo
+ * el ancho del teléfono se ve borrosa. Para el hero se pide la versión 2x.
+ */
+function heroCover(url: string | null): string | null {
+  if (!url || !url.includes('images.igdb.com')) return url
+  return url.replace('/t_cover_big/', '/t_cover_big_2x/')
+}
+
 /** Espera tras el último cambio antes de guardar (campos de texto, sliders). */
 const AUTOSAVE_DELAY = 800
 
@@ -282,8 +291,10 @@ export function GameDetail() {
     <>
       <div className="relative h-64 w-full overflow-hidden bg-primary-dark/20 md:h-80">
         <GameThumb
-          src={game.cover_url}
+          src={heroCover(game.cover_url)}
+          fallbacks={game.cover_url ? [game.cover_url] : []}
           alt={game.title}
+          eager
           className="h-full w-full object-cover"
           placeholderClassName="text-5xl"
         />

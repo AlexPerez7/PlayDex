@@ -1,5 +1,10 @@
 import { supabase } from './supabaseClient'
+import { readCache, writeCache } from './localCache'
 import type { IgdbSearchResult, NewGame, TimeToBeat } from '../types/game'
+
+const POPULAR_CACHE_KEY = 'playdex_popular_v1'
+/** Los populares cambian poco: se reutilizan por 6 h sin volver a pedirlos. */
+const POPULAR_TTL_MS = 6 * 60 * 60 * 1000
 
 export async function searchGames(query: string): Promise<IgdbSearchResult[]> {
   const { data, error } = await supabase.functions.invoke<IgdbSearchResult[]>(
@@ -11,6 +16,13 @@ export async function searchGames(query: string): Promise<IgdbSearchResult[]> {
   return data ?? []
 }
 
+/** Últimos populares guardados (aunque estén vencidos), para pintar al instante. */
+export function getCachedPopularGames(): { data: IgdbSearchResult[]; fresh: boolean } | null {
+  const entry = readCache<IgdbSearchResult[]>(POPULAR_CACHE_KEY)
+  if (!entry) return null
+  return { data: entry.data, fresh: Date.now() - entry.savedAt < POPULAR_TTL_MS }
+}
+
 export async function getPopularGames(): Promise<IgdbSearchResult[]> {
   const { data, error } = await supabase.functions.invoke<IgdbSearchResult[]>(
     'igdb-search',
@@ -18,7 +30,9 @@ export async function getPopularGames(): Promise<IgdbSearchResult[]> {
   )
 
   if (error) throw error
-  return data ?? []
+  const result = data ?? []
+  if (result.length > 0) writeCache(POPULAR_CACHE_KEY, result)
+  return result
 }
 
 /**

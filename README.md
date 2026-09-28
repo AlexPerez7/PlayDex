@@ -37,6 +37,7 @@ En producción: https://playdex.netlify.app/
 - Diario: línea de tiempo con altas, inicios, finalizaciones y sesiones registradas
 - Dashboard con estadísticas (totales, completados, en curso, horas, género favorito, mejor puntuado, más jugado)
 - PWA instalable (manifest, ícono, service worker) y responsive (mobile-first, con ajustes para tablet)
+- Rendimiento: rutas con carga diferida, portadas cacheadas por el service worker y biblioteca/populares pintados al instante desde una cache local (se revalidan contra Supabase en segundo plano)
 
 ## Setup
 

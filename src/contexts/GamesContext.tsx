@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { supabase, ensureSession } from '../lib/supabaseClient'
+import { readCache, removeCacheByPrefix, writeCache } from '../lib/localCache'
 import type { Game, NewGame } from '../types/game'
 
 interface GamesContextValue {
@@ -17,12 +18,16 @@ interface GamesContextValue {
 
 const GamesContext = createContext<GamesContextValue | null>(null)
 
+const CACHE_PREFIX = 'playdex_games_v1:'
+
 export function GamesProvider({ children }: { children: ReactNode }) {
   const [games, setGames] = useState<Game[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   // Una vez que hay datos, las recargas son silenciosas (sin esqueletos).
   const hasLoaded = useRef(false)
+  // Usuario dueño de los datos en memoria (para la cache local).
+  const userIdRef = useRef<string | null>(null)
 
   const fetchGames = useCallback(async () => {
     if (!hasLoaded.current) setLoading(true)
@@ -33,7 +38,9 @@ export function GamesProvider({ children }: { children: ReactNode }) {
       .order('created_at', { ascending: false })
 
     if (error) {
-      setError(error.message)
+      // Si ya hay datos (de la cache o de antes), un fallo de red no borra
+      // la biblioteca ni muestra error: se sigue viendo lo último conocido.
+      if (!hasLoaded.current) setError(error.message)
     } else {
       setGames(data as Game[])
       setError(null)
@@ -56,12 +63,25 @@ export function GamesProvider({ children }: { children: ReactNode }) {
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_OUT' || !session) {
         hasLoaded.current = false
+        userIdRef.current = null
+        removeCacheByPrefix(CACHE_PREFIX)
         setGames([])
         setError(null)
         setLoading(false)
         return
       }
       if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
+        // Pintar al instante la última biblioteca conocida de este usuario y
+        // revalidar contra la DB en segundo plano.
+        if (userIdRef.current !== session.user.id) {
+          userIdRef.current = session.user.id
+          const cached = readCache<Game[]>(CACHE_PREFIX + session.user.id)
+          if (cached) {
+            setGames(cached.data)
+            setLoading(false)
+            hasLoaded.current = true
+          }
+        }
         // Diferido: no se debe llamar a otros métodos de supabase dentro del
         // callback de onAuthStateChange (puede bloquearse esperando el lock).
         setTimeout(fetchGames, 0)
@@ -69,6 +89,13 @@ export function GamesProvider({ children }: { children: ReactNode }) {
     })
     return () => subscription.unsubscribe()
   }, [fetchGames])
+
+  // Mantener la cache local al día con cada cambio (alta, edición, borrado).
+  useEffect(() => {
+    if (hasLoaded.current && userIdRef.current) {
+      writeCache(CACHE_PREFIX + userIdRef.current, games)
+    }
+  }, [games])
 
   const addGame = useCallback(async (game: NewGame) => {
     const {
