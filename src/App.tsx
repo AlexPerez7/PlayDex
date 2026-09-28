@@ -1,5 +1,5 @@
 import { lazy, Suspense, useState } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 import { GamesProvider } from './contexts/GamesContext'
 import { ListsProvider } from './contexts/ListsContext'
@@ -28,6 +28,7 @@ const Login = lazy(() => import('./pages/Login').then((m) => ({ default: m.Login
 const UpdatePassword = lazy(() =>
   import('./pages/UpdatePassword').then((m) => ({ default: m.UpdatePassword }))
 )
+const SharedList = lazy(() => import('./pages/SharedList').then((m) => ({ default: m.SharedList })))
 const Onboarding = lazy(() => import('./pages/Onboarding').then((m) => ({ default: m.Onboarding })))
 
 function SplashScreen() {
@@ -47,6 +48,7 @@ const ONBOARDING_KEY = 'playdex_onboarding_seen'
 
 function App() {
   const { session, loading, recovering, finishRecovery } = useAuth()
+  const location = useLocation()
   const [onboardingSeen, setOnboardingSeen] = useState(
     () => localStorage.getItem(ONBOARDING_KEY) === 'true'
   )
@@ -59,7 +61,16 @@ function App() {
   // en la ventana en que el cliente de Supabase todavía no terminó de
   // adjuntar el token nuevo, trayendo listas vacías hasta refrescar.
   let content
-  if (loading) {
+  if (location.pathname.startsWith('/compartir/')) {
+    // Lista compartida: pública, no requiere sesión ni onboarding.
+    content = (
+      <Suspense fallback={<SplashScreen />}>
+        <Routes>
+          <Route path="/compartir/:id" element={<SharedList />} />
+        </Routes>
+      </Suspense>
+    )
+  } else if (loading) {
     content = <SplashScreen />
   } else if (session && recovering) {
     content = (

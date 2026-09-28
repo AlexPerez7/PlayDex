@@ -33,7 +33,7 @@ En producción: https://playdex.netlify.app/
 - Cronómetro de sesión ("Jugar" / "Terminar"), que sigue contando aunque se cierre la app
 - Registro de sesiones de juego (fecha + minutos), que suman automáticamente a las horas totales (trigger en la DB)
 - Guardado automático en el detalle del juego (sin botón "Guardar")
-- Listas personalizadas (crear, agregar/quitar juegos)
+- Listas personalizadas (crear, agregar/quitar juegos) y compartibles por link público de solo lectura (`/compartir/:id`). La lectura pública pasa por la función `get_public_list` (SECURITY DEFINER), que solo devuelve campos no sensibles de listas marcadas como públicas; las tablas no tienen políticas para `anon`
 - Pantalla de Inicio con juegos populares recientes (vía IGDB) y alta rápida a la biblioteca
 - Diario: línea de tiempo con altas, inicios, finalizaciones y sesiones registradas
 - Estado "Deseado" (wishlist) separado de "Pendiente", con precios de tiendas
@@ -53,7 +53,7 @@ En producción: https://playdex.netlify.app/
    VITE_SUPABASE_URL=
    VITE_SUPABASE_ANON_KEY=
    ```
-3. Ejecutar las migraciones SQL en Supabase, en orden (carpeta `supabase/migrations/`, actualmente 0001 a 0009), o `supabase db push`.
+3. Ejecutar las migraciones SQL en Supabase, en orden (carpeta `supabase/migrations/`, actualmente 0001 a 0010), o `supabase db push`.
    - La `0008` crea un trigger que suma/resta las horas jugadas al registrar/borrar una sesión. El frontend ya no actualiza `hours_played` en ese caso, así que debe aplicarse **antes** de desplegar el frontend.
 4. Configurar los secrets de las Edge Functions (nunca en el frontend) y desplegarlas:
    ```

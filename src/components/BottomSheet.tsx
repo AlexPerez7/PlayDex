@@ -17,13 +17,20 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
   const [dragY, setDragY] = useState(0)
   const dragStart = useRef<number | null>(null)
 
+  // onClose en una ref: si el padre pasa una función en línea (nueva en cada
+  // render), el efecto de abajo no debe re-ejecutarse (re-enfocaría la hoja).
+  const onCloseRef = useRef(onClose)
+  useEffect(() => {
+    onCloseRef.current = onClose
+  })
+
   // Bloquear el scroll de la página de fondo y cerrar con Escape.
   useEffect(() => {
     if (!open) return
     const previous = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') onCloseRef.current()
     }
     document.addEventListener('keydown', onKey)
     sheetRef.current?.focus()
@@ -31,7 +38,7 @@ export function BottomSheet({ open, onClose, title, children }: BottomSheetProps
       document.body.style.overflow = previous
       document.removeEventListener('keydown', onKey)
     }
-  }, [open, onClose])
+  }, [open])
 
   if (!open) return null
 

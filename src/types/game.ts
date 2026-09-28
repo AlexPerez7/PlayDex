@@ -51,6 +51,8 @@ export interface GameList {
   id: string
   user_id: string
   name: string
+  /** Visible por link público (migración 0010). */
+  is_public?: boolean
   created_at: string
 }
 

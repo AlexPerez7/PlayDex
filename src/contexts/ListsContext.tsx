@@ -8,6 +8,7 @@ interface ListsContextValue {
   loading: boolean
   createList: (name: string) => Promise<GameList>
   deleteList: (id: string) => Promise<void>
+  updateList: (id: string, changes: Partial<Pick<GameList, 'name' | 'is_public'>>) => Promise<GameList>
   refetch: () => Promise<void>
 }
 
@@ -76,9 +77,24 @@ export function ListsProvider({ children }: { children: ReactNode }) {
     setLists((prev) => prev.filter((l) => l.id !== id))
   }, [])
 
+  const updateList = useCallback(
+    async (id: string, changes: Partial<Pick<GameList, 'name' | 'is_public'>>) => {
+      const { data, error } = await supabase
+        .from('lists')
+        .update(changes)
+        .eq('id', id)
+        .select()
+        .single()
+      if (error) throw error
+      setLists((prev) => prev.map((l) => (l.id === id ? (data as GameList) : l)))
+      return data as GameList
+    },
+    []
+  )
+
   const value = useMemo<ListsContextValue>(
-    () => ({ lists, loading, createList, deleteList, refetch: fetchLists }),
-    [lists, loading, createList, deleteList, fetchLists]
+    () => ({ lists, loading, createList, deleteList, updateList, refetch: fetchLists }),
+    [lists, loading, createList, deleteList, updateList, fetchLists]
   )
 
   return <ListsContext.Provider value={value}>{children}</ListsContext.Provider>
