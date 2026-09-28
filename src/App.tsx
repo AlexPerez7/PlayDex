@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 import { GamesProvider } from './contexts/GamesContext'
 import { ListsProvider } from './contexts/ListsContext'
+import { ToastProvider } from './contexts/ToastContext'
 import { BottomNav } from './components/BottomNav'
 import { Home } from './pages/Home'
 import { Library } from './pages/Library'
@@ -33,43 +34,50 @@ function App() {
   // en la ventana en que el cliente de Supabase todavía no terminó de
   // adjuntar el token nuevo, trayendo listas vacías hasta refrescar.
   return (
-    <GamesProvider>
-      <ListsProvider>
-        {loading ? (
-          <div className="flex min-h-screen items-center justify-center text-lavender">
-            Cargando...
-          </div>
-        ) : !session ? (
-          !onboardingSeen ? (
-            <Onboarding
-              onFinish={() => {
-                localStorage.setItem(ONBOARDING_KEY, 'true')
-                setOnboardingSeen(true)
-              }}
-            />
+    <ToastProvider>
+      <GamesProvider>
+        <ListsProvider>
+          {loading ? (
+            <div className="flex min-h-dvh flex-col items-center justify-center gap-4">
+              <img
+                src="/icons/icon-192.png"
+                alt=""
+                className="h-20 w-20 animate-pulse rounded-3xl shadow-lg shadow-black/40"
+              />
+              <span className="sr-only">Cargando...</span>
+            </div>
+          ) : !session ? (
+            !onboardingSeen ? (
+              <Onboarding
+                onFinish={() => {
+                  localStorage.setItem(ONBOARDING_KEY, 'true')
+                  setOnboardingSeen(true)
+                }}
+              />
+            ) : (
+              <Login />
+            )
           ) : (
-            <Login />
-          )
-        ) : (
-          <div className="min-h-screen">
-            <Routes>
-              <Route path="/" element={<Library />} />
-              <Route path="/home" element={<Home />} />
-              <Route path="/add" element={<AddGame />} />
-              <Route path="/steam-import" element={<SteamImport />} />
-              <Route path="/steam-import/callback" element={<SteamCallback />} />
-              <Route path="/game/:id" element={<GameDetail />} />
-              <Route path="/lists" element={<Lists />} />
-              <Route path="/lists/:id" element={<ListDetail />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/timeline" element={<Timeline />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-            <BottomNav />
-          </div>
-        )}
-      </ListsProvider>
-    </GamesProvider>
+            <div className="min-h-screen">
+              <Routes>
+                <Route path="/" element={<Library />} />
+                <Route path="/home" element={<Home />} />
+                <Route path="/add" element={<AddGame />} />
+                <Route path="/steam-import" element={<SteamImport />} />
+                <Route path="/steam-import/callback" element={<SteamCallback />} />
+                <Route path="/game/:id" element={<GameDetail />} />
+                <Route path="/lists" element={<Lists />} />
+                <Route path="/lists/:id" element={<ListDetail />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/timeline" element={<Timeline />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+              <BottomNav />
+            </div>
+          )}
+        </ListsProvider>
+      </GamesProvider>
+    </ToastProvider>
   )
 }
 

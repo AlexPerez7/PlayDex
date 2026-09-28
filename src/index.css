@@ -13,6 +13,16 @@
   --color-warning: #f5a623;
 }
 
+/* Márgenes seguros (notch, isla dinámica, indicador de inicio de iOS). */
+@utility pt-safe-6 {
+  padding-top: calc(1.5rem + env(safe-area-inset-top));
+}
+
+/* Espacio para la barra de navegación flotante + indicador de inicio. */
+@utility pb-safe-nav {
+  padding-bottom: calc(7rem + env(safe-area-inset-bottom));
+}
+
 :root {
   color-scheme: dark;
 }
@@ -23,10 +33,25 @@ html, body, #root {
 
 html, body {
   overflow-x: hidden;
+  /* Evita que el "pull to refresh" nativo de Chrome Android recargue toda la
+     PWA (Inicio tiene su propio gesto de actualizar). */
+  overscroll-behavior-y: contain;
 }
 
 body {
   @apply bg-background text-ink antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* iOS Safari hace zoom al enfocar cualquier campo con fuente < 16px. Esta
+   regla va fuera de las capas de Tailwind, así que le gana a `text-sm` en los
+   inputs. Solo aplica en pantallas táctiles; en desktop se mantiene el diseño. */
+@media (pointer: coarse) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
 }
 
 .scrollbar-hide {
@@ -36,4 +61,19 @@ body {
 
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.toast-in {
+  animation: toast-in 180ms ease-out;
 }

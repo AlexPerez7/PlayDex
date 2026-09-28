@@ -25,7 +25,7 @@ export function SteamCallback() {
           setStatus('warn')
           setMessage(
             'Cuenta vinculada, pero tu perfil de Steam parece estar en privado. ' +
-              'Ponelo en público para poder importar tu biblioteca.'
+              'Cámbialo a público para poder importar tu biblioteca.'
           )
         } else {
           setStatus('ok')

@@ -1,13 +1,15 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   CheckCircle2,
   Flame,
   Gamepad2,
   Joystick,
+  LogOut,
   Star,
   Tag,
   Timer,
+  UserRound,
   type LucideIcon,
 } from 'lucide-react'
 import { useGames } from '../hooks/useGames'
@@ -15,6 +17,8 @@ import { StatsCard } from '../components/StatsCard'
 import { StatsCardSkeleton } from '../components/Skeleton'
 import { PageContainer } from '../components/PageContainer'
 import { parseTags } from '../lib/tags'
+import { useAuth } from '../hooks/useAuth'
+import { useToast } from '../contexts/ToastContext'
 
 export function Dashboard() {
   const navigate = useNavigate()
@@ -23,7 +27,9 @@ export function Dashboard() {
   const stats = useMemo(() => {
     const completados = games.filter((g) => g.status === 'completado').length
     const jugando = games.filter((g) => g.status === 'jugando').length
-    const totalHoras = games.reduce((sum, g) => sum + (g.hours_played ?? 0), 0)
+    // Redondeo a 1 decimal: la suma de numerics como float deja cosas como 12.300000000000001.
+    const totalHoras =
+      Math.round(games.reduce((sum, g) => sum + Number(g.hours_played ?? 0), 0) * 10) / 10
 
     const genreCounts = new Map<string, number>()
     for (const g of games) {
@@ -105,6 +111,46 @@ export function Dashboard() {
           )}
         </>
       )}
+
+      <AccountCard />
     </PageContainer>
+  )
+}
+
+function AccountCard() {
+  const { session, signOut } = useAuth()
+  const { showError } = useToast()
+  const [signingOut, setSigningOut] = useState(false)
+
+  async function handleSignOut() {
+    if (!confirm('¿Cerrar sesión en este dispositivo?')) return
+    setSigningOut(true)
+    const { error } = await signOut()
+    if (error) {
+      showError(error, 'No se pudo cerrar la sesión')
+      setSigningOut(false)
+    }
+  }
+
+  return (
+    <div className="mt-8 rounded-lg bg-background-surface p-3 ring-1 ring-primary-dark/30">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary-dark/30 text-lavender">
+          <UserRound size={18} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs text-lavender">Sesión iniciada como</p>
+          <p className="truncate text-sm text-ink">{session?.user.email ?? '—'}</p>
+        </div>
+        <button
+          onClick={handleSignOut}
+          disabled={signingOut}
+          className="flex min-h-11 flex-shrink-0 items-center gap-1.5 rounded-full px-3 text-sm font-medium text-error active:bg-error/10 disabled:opacity-50"
+        >
+          <LogOut size={16} />
+          {signingOut ? 'Saliendo...' : 'Salir'}
+        </button>
+      </div>
+    </div>
   )
 }

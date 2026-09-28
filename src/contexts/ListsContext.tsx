@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { supabase, ensureSession } from '../lib/supabaseClient'
 import type { GameList } from '../types/game'
@@ -16,28 +16,39 @@ const ListsContext = createContext<ListsContextValue | null>(null)
 export function ListsProvider({ children }: { children: ReactNode }) {
   const [lists, setLists] = useState<GameList[]>([])
   const [loading, setLoading] = useState(true)
+  const hasLoaded = useRef(false)
 
   const fetchLists = useCallback(async () => {
-    setLoading(true)
+    if (!hasLoaded.current) setLoading(true)
     await ensureSession()
     const { data, error } = await supabase
       .from('lists')
       .select('*')
       .order('created_at', { ascending: false })
 
-    if (!error) setLists(data as GameList[])
+    if (!error) {
+      setLists(data as GameList[])
+      hasLoaded.current = true
+    }
     setLoading(false)
   }, [])
 
   useEffect(() => {
-    // Ver el comentario equivalente en GamesContext: nos suscribimos a
-    // onAuthStateChange (que ya dispara un INITIAL_SESSION al montar) en
-    // vez de hacer un fetchLists() aparte, para no perder el refetch
-    // cuando el SIGNED_IN llega después del mount.
+    // Mismo criterio que GamesContext: solo recargar en login/sesión inicial,
+    // no en cada renovación de token (que en mobile ocurre al volver del
+    // segundo plano).
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
-      fetchLists()
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        hasLoaded.current = false
+        setLists([])
+        setLoading(false)
+        return
+      }
+      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
+        setTimeout(fetchLists, 0)
+      }
     })
     return () => subscription.unsubscribe()
   }, [fetchLists])
@@ -65,13 +76,10 @@ export function ListsProvider({ children }: { children: ReactNode }) {
     setLists((prev) => prev.filter((l) => l.id !== id))
   }, [])
 
-  const value: ListsContextValue = {
-    lists,
-    loading,
-    createList,
-    deleteList,
-    refetch: fetchLists,
-  }
+  const value = useMemo<ListsContextValue>(
+    () => ({ lists, loading, createList, deleteList, refetch: fetchLists }),
+    [lists, loading, createList, deleteList, fetchLists]
+  )
 
   return <ListsContext.Provider value={value}>{children}</ListsContext.Provider>
 }

@@ -1,9 +1,11 @@
-import { useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import {
   BookOpen,
   Calendar,
+  AlertCircle,
   Check,
+  CheckCircle2,
   ChevronDown,
   ClipboardList,
   Clock,
@@ -14,6 +16,7 @@ import {
   Info,
   Layers,
   ListChecks,
+  Loader2,
   Minus,
   MoreVertical,
   Pencil,
@@ -42,16 +45,21 @@ import { TimeToBeat } from '../components/TimeToBeat'
 import { Skeleton } from '../components/Skeleton'
 import { PageContainer } from '../components/PageContainer'
 import { statusColors, statusIcons, statusLabels, statuses } from '../lib/status'
+import { formatDate, sessionTimestamp, todayISO } from '../lib/dates'
+import { useToast } from '../contexts/ToastContext'
 import type { Game } from '../types/game'
 
-function todayISO() {
-  return new Date().toISOString().slice(0, 10)
-}
+type SaveState = 'idle' | 'saving' | 'saved' | 'error'
+
+/** Espera tras el último cambio antes de guardar (campos de texto, sliders). */
+const AUTOSAVE_DELAY = 800
 
 export function GameDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { games, loading, updateGame, deleteGame } = useGames()
+  const location = useLocation()
+  const { games, loading, updateGame, deleteGame, refreshGame } = useGames()
+  const { showToast, showError } = useToast()
   const game = games.find((g) => g.id === id)
   // Se pasa el id de la URL (no game?.id) para que estas consultas no
   // esperen a que termine de cargar toda la biblioteca antes de arrancar.
@@ -59,9 +67,67 @@ export function GameDetail() {
   const { lists } = useLists()
   const { listIds, toggle: toggleList } = useGameListIds(id)
 
-  const [form, setForm] = useState<Partial<Game> | null>(null)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  // --- Guardado automático ---------------------------------------------
+  // `draft` guarda SOLO los campos modificados que todavía no se guardaron.
+  // Lo que se ve en pantalla es el juego del contexto con el draft encima.
+  const [draft, setDraft] = useState<Partial<Game>>({})
+  const draftRef = useRef<Partial<Game>>({})
+  const [saveState, setSaveState] = useState<SaveState>('idle')
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const inFlight = useRef<Promise<void> | null>(null)
+
+  const flush = useCallback(async () => {
+    clearTimeout(saveTimer.current)
+    if (!id) return
+    // Serializar: si hay un guardado en curso, esperarlo antes de mandar otro.
+    if (inFlight.current) await inFlight.current
+    const pending = draftRef.current
+    if (Object.keys(pending).length === 0) return
+
+    const run = (async () => {
+      setSaveState('saving')
+      try {
+        await updateGame(id, pending)
+        // Quitar del draft solo lo que no volvió a cambiar mientras se guardaba.
+        const next = { ...draftRef.current }
+        for (const key of Object.keys(pending) as (keyof Game)[]) {
+          if (next[key] === pending[key]) delete next[key]
+        }
+        draftRef.current = next
+        setDraft(next)
+        setSaveState('saved')
+      } catch (err) {
+        setSaveState('error')
+        showError(err, 'No se pudieron guardar los cambios')
+      }
+    })()
+    inFlight.current = run
+    await run
+    inFlight.current = null
+  }, [id, updateGame, showError])
+
+  const setField = useCallback(
+    (changes: Partial<Game>, { immediate = false } = {}) => {
+      draftRef.current = { ...draftRef.current, ...changes }
+      setDraft(draftRef.current)
+      clearTimeout(saveTimer.current)
+      saveTimer.current = setTimeout(flush, immediate ? 0 : AUTOSAVE_DELAY)
+    },
+    [flush]
+  )
+
+  // Guardar lo pendiente al salir de la pantalla o cuando la app pasa a
+  // segundo plano (en mobile el sistema puede matar la PWA sin avisar).
+  useEffect(() => {
+    function onHide() {
+      if (document.visibilityState === 'hidden') flush()
+    }
+    document.addEventListener('visibilitychange', onHide)
+    return () => {
+      document.removeEventListener('visibilitychange', onHide)
+      flush()
+    }
+  }, [flush])
 
   const [sessionMinutes, setSessionMinutes] = useState('')
   const [sessionDate, setSessionDate] = useState(todayISO())
@@ -79,58 +145,65 @@ export function GameDetail() {
   const [descExpanded, setDescExpanded] = useState(false)
   const notesRef = useRef<HTMLDivElement>(null)
 
-  const current = form ?? game
+  const current = game ? { ...game, ...draft } : undefined
   const status = current?.status ?? 'pendiente'
   const storyPercent = current?.story_percent ?? 0
   const generalPercent = current?.general_percent ?? 0
   const completionistPercent = current?.completionist_percent ?? 0
 
-  async function handleSave() {
-    if (!game || !form) return
-    setSaving(true)
-    setError(null)
-    try {
-      await updateGame(game.id, form)
-      navigate('/')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al guardar')
-    } finally {
-      setSaving(false)
-    }
+  function goBack() {
+    // Si se llegó navegando dentro de la app, volver atrás conserva los
+    // filtros y el scroll de la pantalla anterior. Si se abrió por link
+    // directo no hay historial propio: ir a la biblioteca.
+    if (location.key !== 'default') navigate(-1)
+    else navigate('/')
   }
 
   async function handleDelete() {
     if (!game) return
+    setMenuOpen(false)
     if (!confirm(`¿Eliminar "${game.title}" de tu biblioteca?`)) return
-    await deleteGame(game.id)
-    navigate('/')
-  }
-
-  async function toggleFavorite() {
-    if (!game || !current) return
-    const is_favorite = !current.is_favorite
-    setForm({ ...current, is_favorite })
     try {
-      await updateGame(game.id, { is_favorite })
-    } catch {
-      setForm({ ...current, is_favorite: !is_favorite })
+      clearTimeout(saveTimer.current)
+      draftRef.current = {}
+      await deleteGame(game.id)
+      showToast(`"${game.title}" se eliminó de tu biblioteca`)
+      navigate('/', { replace: true })
+    } catch (err) {
+      showError(err, 'No se pudo eliminar el juego')
     }
   }
 
-  async function handleStatusChange(newStatus: Game['status']) {
-    if (!game || !current) return
-    const previousStatus = status
-    setForm({ ...current, status: newStatus })
+  function toggleFavorite() {
+    if (!current) return
+    setField({ is_favorite: !current.is_favorite }, { immediate: true })
+  }
+
+  function handleStatusChange(newStatus: Game['status']) {
+    if (!current) return
     setStatusOpen(false)
-    try {
-      await updateGame(game.id, { status: newStatus })
-    } catch {
-      setForm({ ...current, status: previousStatus })
+    const changes: Partial<Game> = { status: newStatus }
+    // Completar las fechas automáticamente: el Diario se arma con ellas.
+    if (newStatus === 'jugando' && !current.date_started) {
+      changes.date_started = todayISO()
     }
+    if (newStatus === 'completado' && !current.date_finished) {
+      changes.date_finished = todayISO()
+    }
+    setField(changes, { immediate: true })
+  }
+
+  /** Registra una sesión; las horas las suma un trigger en la DB. */
+  async function registerSession(minutes: number, playedAt: string) {
+    if (!game) return
+    // Mandar antes cualquier edición manual de horas pendiente, para que el
+    // trigger sume sobre el valor correcto.
+    await flush()
+    await addSession(minutes, playedAt)
+    await refreshGame(game.id)
   }
 
   async function handleAddSession() {
-    if (!game || !current) return
     const minutes = Number(sessionMinutes)
     if (!minutes || minutes <= 0) {
       setSessionError('Ingresa una duración válida en minutos')
@@ -138,34 +211,40 @@ export function GameDetail() {
     }
     setSessionError(null)
     try {
-      await addSession(minutes, new Date(sessionDate).toISOString())
-      const hours_played = Math.round(((current.hours_played ?? 0) + minutes / 60) * 10) / 10
-      await updateGame(game.id, { hours_played })
-      setForm({ ...current, hours_played })
+      await registerSession(minutes, sessionTimestamp(sessionDate))
       setSessionMinutes('')
+      showToast(`Sesión de ${minutes} min registrada`)
     } catch (err) {
-      setSessionError(err instanceof Error ? err.message : 'Error al guardar la sesión')
+      showError(err, 'Error al guardar la sesión')
     }
   }
 
   async function handleQuickSession() {
-    if (!game || !current) return
     try {
-      await addSession(30, new Date().toISOString())
-      const hours_played = Math.round(((current.hours_played ?? 0) + 0.5) * 10) / 10
-      await updateGame(game.id, { hours_played })
-      setForm({ ...current, hours_played })
+      await registerSession(30, new Date().toISOString())
+      showToast('+30 min sumados')
     } catch (err) {
-      setSessionError(err instanceof Error ? err.message : 'Error al guardar la sesión')
+      showError(err, 'Error al guardar la sesión')
     }
   }
 
-  async function handleDeleteSession(sessionId: string, minutes: number) {
-    if (!game || !current) return
-    await deleteSession(sessionId)
-    const hours_played = Math.max(0, Math.round(((current.hours_played ?? 0) - minutes / 60) * 10) / 10)
-    await updateGame(game.id, { hours_played })
-    setForm({ ...current, hours_played })
+  async function handleDeleteSession(sessionId: string) {
+    if (!game) return
+    try {
+      await flush()
+      await deleteSession(sessionId)
+      await refreshGame(game.id)
+    } catch (err) {
+      showError(err, 'No se pudo eliminar la sesión')
+    }
+  }
+
+  async function handleToggleList(listId: string) {
+    try {
+      await toggleList(listId)
+    } catch (err) {
+      showError(err, 'No se pudo actualizar la lista')
+    }
   }
 
   if (loading) {
@@ -216,36 +295,52 @@ export function GameDetail() {
           }}
         />
 
-        <button
-          onClick={() => navigate('/')}
-          className="absolute left-4 top-4 flex h-10 w-10 items-center justify-center rounded-full bg-background/70 text-ink backdrop-blur"
+        {/* Botones sobre la portada: respetan el notch / isla dinámica. */}
+        <div
+          className="absolute inset-x-4 flex items-start justify-between"
+          style={{ top: 'calc(1rem + env(safe-area-inset-top))' }}
         >
-          <X size={20} />
-        </button>
-
-        <div className="absolute right-4 top-4">
           <button
-            onClick={() => setMenuOpen((v) => !v)}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-background/70 text-ink backdrop-blur"
+            onClick={goBack}
+            aria-label="Volver"
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-background/70 text-ink backdrop-blur"
           >
-            <MoreVertical size={20} />
+            <X size={20} />
           </button>
-          {menuOpen && (
-            <div className="absolute right-0 mt-2 w-44 rounded-xl bg-background-surface p-1 shadow-lg ring-1 ring-primary-dark/30">
-              <button
-                onClick={handleDelete}
-                className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-error active:bg-error/10"
-              >
-                Eliminar juego
-              </button>
-            </div>
-          )}
+
+          <div className="relative">
+            <button
+              onClick={() => setMenuOpen((v) => !v)}
+              aria-label="Más opciones"
+              aria-expanded={menuOpen}
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-background/70 text-ink backdrop-blur"
+            >
+              <MoreVertical size={20} />
+            </button>
+            {menuOpen && (
+              <>
+                {/* Capa invisible: tocar fuera cierra el menú. */}
+                <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
+                <div className="absolute right-0 z-20 mt-2 w-48 rounded-xl bg-background-surface p-1 shadow-lg ring-1 ring-primary-dark/30">
+                  <button
+                    onClick={handleDelete}
+                    className="w-full rounded-lg px-3 py-3 text-left text-sm font-medium text-error active:bg-error/10"
+                  >
+                    Eliminar juego
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
-      <PageContainer>
+      <PageContainer belowHero>
         <div className="mx-auto md:max-w-xl">
-          <h1 className="text-2xl font-bold">{game.title}</h1>
+          <div className="flex items-start justify-between gap-3">
+            <h1 className="min-w-0 text-2xl font-bold">{game.title}</h1>
+            <SaveIndicator state={saveState} onRetry={flush} />
+          </div>
           {game.first_release_date && (
             <p className="mt-0.5 text-sm text-lavender">
               {new Date(game.first_release_date * 1000).getFullYear()}
@@ -296,6 +391,8 @@ export function GameDetail() {
             </BottomSheet>
             <button
               onClick={toggleFavorite}
+              aria-label={current.is_favorite ? 'Quitar de favoritos' : 'Marcar como favorito'}
+              aria-pressed={current.is_favorite}
               className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full ring-1 ring-primary-dark/30 ${
                 current.is_favorite ? 'bg-accent text-primary-darker' : 'bg-background-surface text-lavender'
               }`}
@@ -304,6 +401,7 @@ export function GameDetail() {
             </button>
             <button
               onClick={() => notesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+              aria-label="Ir a notas y reseña"
               className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-background-surface text-lavender ring-1 ring-primary-dark/30"
             >
               <StickyNote size={18} />
@@ -317,6 +415,7 @@ export function GameDetail() {
               action={
                 <button
                   onClick={() => setEditingProgress((v) => !v)}
+                  aria-label="Editar progreso"
                   className="flex h-7 w-7 items-center justify-center rounded-full text-lavender active:bg-primary-dark/20"
                 >
                   <Pencil size={14} />
@@ -348,7 +447,7 @@ export function GameDetail() {
                         min={0}
                         max={100}
                         value={value}
-                        onChange={(e) => setForm({ ...current, [key]: Number(e.target.value) })}
+                        onChange={(e) => setField({ [key]: Number(e.target.value) })}
                         className="w-full accent-accent"
                       />
                     </div>
@@ -364,6 +463,7 @@ export function GameDetail() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setEditingHours((v) => !v)}
+                    aria-label="Editar horas"
                     className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-dark/20 text-lavender"
                   >
                     <Pencil size={14} />
@@ -371,6 +471,7 @@ export function GameDetail() {
                   <button
                     onClick={handleQuickSession}
                     title="Sumar 30 min"
+                    aria-label="Sumar 30 minutos"
                     className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-dark/20 text-accent"
                   >
                     <Play size={14} fill="currentColor" />
@@ -389,7 +490,7 @@ export function GameDetail() {
                     setHoursText(raw)
                     const parsed = raw === '' ? 0 : Number(raw)
                     if (!Number.isNaN(parsed)) {
-                      setForm({ ...current, hours_played: parsed })
+                      setField({ hours_played: parsed })
                     }
                   }}
                   onBlur={() => setHoursText(null)}
@@ -400,7 +501,7 @@ export function GameDetail() {
               <div className="mt-3">
                 <StarRating
                   value={current.rating ?? null}
-                  onChange={(rating) => setForm({ ...current, rating })}
+                  onChange={(rating) => setField({ rating }, { immediate: true })}
                 />
               </div>
             </SectionCard>
@@ -414,7 +515,7 @@ export function GameDetail() {
             <SectionCard icon={Gamepad2} title="Plataforma">
               <PlatformPicker
                 value={current.platform}
-                onChange={(platform) => setForm({ ...current, platform })}
+                onChange={(platform) => setField({ platform })}
               />
             </SectionCard>
 
@@ -425,14 +526,14 @@ export function GameDetail() {
             <SectionCard icon={Disc} title="Formato">
               <FormatPicker
                 value={current.format}
-                onChange={(format) => setForm({ ...current, format })}
+                onChange={(format) => setField({ format })}
               />
             </SectionCard>
 
             <SectionCard icon={Layers} title="Franquicia">
               <input
                 value={current.franchise ?? ''}
-                onChange={(e) => setForm({ ...current, franchise: e.target.value })}
+                onChange={(e) => setField({ franchise: e.target.value })}
                 placeholder="Ej. Final Fantasy"
                 className="w-full rounded-md bg-background/40 px-3 py-2 text-sm text-ink ring-1 ring-primary-dark/30 focus:outline-none focus:ring-2 focus:ring-primary"
               />
@@ -443,7 +544,7 @@ export function GameDetail() {
                 <button
                   type="button"
                   onClick={() =>
-                    setForm({ ...current, replays: Math.max(0, (current.replays ?? 0) - 1) })
+                    setField({ replays: Math.max(0, (current.replays ?? 0) - 1) })
                   }
                   className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary-dark/20 text-lavender"
                 >
@@ -454,7 +555,7 @@ export function GameDetail() {
                 </span>
                 <button
                   type="button"
-                  onClick={() => setForm({ ...current, replays: (current.replays ?? 0) + 1 })}
+                  onClick={() => setField({ replays: (current.replays ?? 0) + 1 })}
                   className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary-dark/20 text-lavender"
                 >
                   <Plus size={14} />
@@ -468,7 +569,7 @@ export function GameDetail() {
               </div>
               <input
                 value={current.genre ?? ''}
-                onChange={(e) => setForm({ ...current, genre: e.target.value })}
+                onChange={(e) => setField({ genre: e.target.value })}
                 placeholder="Separa varios con coma"
                 className="w-full rounded-md bg-background/40 px-3 py-2 text-sm text-ink ring-1 ring-primary-dark/30 focus:outline-none focus:ring-2 focus:ring-primary"
               />
@@ -495,7 +596,7 @@ export function GameDetail() {
                   <input
                     type="date"
                     value={current.date_started ?? ''}
-                    onChange={(e) => setForm({ ...current, date_started: e.target.value || null })}
+                    onChange={(e) => setField({ date_started: e.target.value || null })}
                     className="w-full rounded-md bg-background/40 px-3 py-2 text-sm text-ink ring-1 ring-primary-dark/30 focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
@@ -504,7 +605,7 @@ export function GameDetail() {
                   <input
                     type="date"
                     value={current.date_finished ?? ''}
-                    onChange={(e) => setForm({ ...current, date_finished: e.target.value || null })}
+                    onChange={(e) => setField({ date_finished: e.target.value || null })}
                     className="w-full rounded-md bg-background/40 px-3 py-2 text-sm text-ink ring-1 ring-primary-dark/30 focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
@@ -518,7 +619,7 @@ export function GameDetail() {
                     <label className="mb-1 block text-xs text-lavender">Notas</label>
                     <textarea
                       value={current.notes ?? ''}
-                      onChange={(e) => setForm({ ...current, notes: e.target.value })}
+                      onChange={(e) => setField({ notes: e.target.value })}
                       rows={3}
                       placeholder="Notas de progreso, spoilers, pendientes..."
                       className="w-full rounded-md bg-background/40 px-3 py-2.5 text-sm text-ink ring-1 ring-primary-dark/30 focus:outline-none focus:ring-2 focus:ring-primary"
@@ -528,7 +629,7 @@ export function GameDetail() {
                     <label className="mb-1 block text-xs text-lavender">Reseña</label>
                     <textarea
                       value={current.review ?? ''}
-                      onChange={(e) => setForm({ ...current, review: e.target.value })}
+                      onChange={(e) => setField({ review: e.target.value })}
                       rows={4}
                       placeholder="Tu opinión sobre el juego..."
                       className="w-full rounded-md bg-background/40 px-3 py-2.5 text-sm text-ink ring-1 ring-primary-dark/30 focus:outline-none focus:ring-2 focus:ring-primary"
@@ -537,16 +638,6 @@ export function GameDetail() {
                 </div>
               </SectionCard>
             </div>
-
-            {error && <p className="text-sm text-error">{error}</p>}
-
-            <button
-              onClick={handleSave}
-              disabled={saving || !form}
-              className="rounded-md bg-primary py-3 font-medium text-white disabled:opacity-40"
-            >
-              {saving ? 'Guardando...' : 'Guardar cambios'}
-            </button>
 
             <SectionCard icon={ClipboardList} title="Mis listas">
               {lists.length === 0 ? (
@@ -561,7 +652,7 @@ export function GameDetail() {
                       <button
                         key={list.id}
                         type="button"
-                        onClick={() => toggleList(list.id)}
+                        onClick={() => handleToggleList(list.id)}
                         className={`rounded-full px-3 py-1 text-xs ${
                           active
                             ? 'bg-accent text-primary-darker'
@@ -615,10 +706,10 @@ export function GameDetail() {
                       className="flex items-center justify-between rounded-md bg-background/40 px-3 py-2 text-sm ring-1 ring-primary-dark/30"
                     >
                       <span className="text-lavender">
-                        {new Date(s.played_at).toLocaleDateString()} — {s.duration_minutes} min
+                        {formatDate(s.played_at)} — {s.duration_minutes} min
                       </span>
                       <button
-                        onClick={() => handleDeleteSession(s.id, s.duration_minutes)}
+                        onClick={() => handleDeleteSession(s.id)}
                         className="text-xs text-error"
                       >
                         Eliminar
@@ -632,5 +723,36 @@ export function GameDetail() {
         </div>
       </PageContainer>
     </>
+  )
+}
+
+
+function SaveIndicator({ state, onRetry }: { state: SaveState; onRetry: () => void }) {
+  if (state === 'idle') return null
+  if (state === 'error') {
+    return (
+      <button
+        onClick={onRetry}
+        className="mt-1.5 flex flex-shrink-0 items-center gap-1 text-xs font-medium text-error"
+      >
+        <AlertCircle size={14} /> Reintentar
+      </button>
+    )
+  }
+  return (
+    <span
+      aria-live="polite"
+      className="mt-1.5 flex flex-shrink-0 items-center gap-1 text-xs text-lavender"
+    >
+      {state === 'saving' ? (
+        <>
+          <Loader2 size={14} className="animate-spin" /> Guardando
+        </>
+      ) : (
+        <>
+          <CheckCircle2 size={14} className="text-accent" /> Guardado
+        </>
+      )}
+    </span>
   )
 }

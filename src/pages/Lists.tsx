@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom'
 import { useLists } from '../hooks/useLists'
 import { PageContainer } from '../components/PageContainer'
 import { Skeleton } from '../components/Skeleton'
+import { useToast } from '../contexts/ToastContext'
 
 export function Lists() {
   const navigate = useNavigate()
   const { lists, loading, createList, deleteList } = useLists()
   const [name, setName] = useState('')
   const [creating, setCreating] = useState(false)
+  const { showError } = useToast()
 
   async function handleCreate() {
     if (!name.trim()) return
@@ -16,6 +18,8 @@ export function Lists() {
     try {
       await createList(name.trim())
       setName('')
+    } catch (err) {
+      showError(err, 'No se pudo crear la lista')
     } finally {
       setCreating(false)
     }
@@ -23,7 +27,11 @@ export function Lists() {
 
   async function handleDelete(id: string, listName: string) {
     if (!confirm(`¿Eliminar la lista "${listName}"?`)) return
-    await deleteList(id)
+    try {
+      await deleteList(id)
+    } catch (err) {
+      showError(err, 'No se pudo eliminar la lista')
+    }
   }
 
   return (

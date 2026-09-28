@@ -4,8 +4,10 @@ import { Flag, Play, Plus, Timer, type LucideIcon } from 'lucide-react'
 import { supabase, ensureSession } from '../lib/supabaseClient'
 import { useGames } from '../hooks/useGames'
 import { PageContainer } from '../components/PageContainer'
+import { formatDate, parseDate } from '../lib/dates'
 
 interface TimelineEvent {
+  key: string
   date: string
   icon: LucideIcon
   text: string
@@ -46,6 +48,7 @@ export function Timeline() {
 
   for (const g of games) {
     events.push({
+      key: `add-${g.id}`,
       date: g.created_at,
       icon: Plus,
       text: `Agregaste ${g.title} a tu biblioteca`,
@@ -53,6 +56,7 @@ export function Timeline() {
     })
     if (g.date_started) {
       events.push({
+        key: `start-${g.id}`,
         date: g.date_started,
         icon: Play,
         text: `Empezaste a jugar ${g.title}`,
@@ -61,6 +65,7 @@ export function Timeline() {
     }
     if (g.date_finished) {
       events.push({
+        key: `finish-${g.id}`,
         date: g.date_finished,
         icon: Flag,
         text: `Completaste ${g.title}`,
@@ -71,6 +76,7 @@ export function Timeline() {
 
   for (const s of sessions) {
     events.push({
+      key: `session-${s.id}`,
       date: s.played_at,
       icon: Timer,
       text: `Jugaste ${s.duration_minutes} min de ${s.games?.title ?? 'un juego'}`,
@@ -78,7 +84,7 @@ export function Timeline() {
     })
   }
 
-  events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  events.sort((a, b) => parseDate(b.date).getTime() - parseDate(a.date).getTime())
 
   return (
     <PageContainer>
@@ -97,8 +103,8 @@ export function Timeline() {
       )}
 
       <ul className="flex flex-col gap-2">
-        {events.map((e, i) => (
-          <li key={i}>
+        {events.map((e) => (
+          <li key={e.key}>
             <button
               onClick={() => navigate(`/game/${e.gameId}`)}
               className="flex w-full items-start gap-3 rounded-lg bg-background-surface p-3 text-left ring-1 ring-primary-dark/30"
@@ -107,7 +113,7 @@ export function Timeline() {
               <div className="min-w-0 flex-1">
                 <p className="text-sm text-ink">{e.text}</p>
                 <p className="text-xs text-lavender">
-                  {new Date(e.date).toLocaleDateString()}
+                  {formatDate(e.date)}
                 </p>
               </div>
             </button>

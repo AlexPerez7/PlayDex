@@ -83,10 +83,11 @@ export async function disconnectSteam(): Promise<void> {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) return
-  await supabase
+  const { error } = await supabase
     .from('profiles')
     .update({ steam_id: null, steam_persona: null, steam_avatar: null })
     .eq('user_id', user.id)
+  if (error) throw error
 }
 
 export async function getSteamLibrary(): Promise<SteamGame[]> {

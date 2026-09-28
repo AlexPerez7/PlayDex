@@ -3,6 +3,7 @@ import { useLists, useListGameIds } from '../hooks/useLists'
 import { useGames } from '../hooks/useGames'
 import { GameCard } from '../components/GameCard'
 import { PageContainer } from '../components/PageContainer'
+import { useToast } from '../contexts/ToastContext'
 
 export function ListDetail() {
   const { id } = useParams<{ id: string }>()
@@ -10,6 +11,7 @@ export function ListDetail() {
   const { lists } = useLists()
   const { gameIds, loading, removeGame } = useListGameIds(id)
   const { games } = useGames()
+  const { showError } = useToast()
 
   const list = lists.find((l) => l.id === id)
   const listGames = gameIds
@@ -28,7 +30,7 @@ export function ListDetail() {
 
       {!loading && listGames.length === 0 && (
         <p className="mt-8 text-center text-sm text-lavender">
-          Esta lista todavía no tiene juegos. Agregalos desde el detalle de cada juego.
+          Esta lista todavía no tiene juegos. Agrégalos desde el detalle de cada juego.
         </p>
       )}
 
@@ -37,7 +39,7 @@ export function ListDetail() {
           <div key={game.id} className="flex flex-col gap-1">
             <GameCard game={game} onClick={(g) => navigate(`/game/${g.id}`)} />
             <button
-              onClick={() => removeGame(game.id)}
+              onClick={() => removeGame(game.id).catch((err) => showError(err, 'No se pudo quitar el juego'))}
               className="self-end text-xs text-error"
             >
               Quitar de la lista

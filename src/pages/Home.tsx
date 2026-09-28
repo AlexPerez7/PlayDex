@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Gamepad2 } from 'lucide-react'
 import { getPopularGames, igdbResultToNewGame } from '../lib/igdb'
 import { useGames } from '../hooks/useGames'
+import { useToast } from '../contexts/ToastContext'
 import { PageContainer } from '../components/PageContainer'
 import { TagList } from '../components/TagList'
 import { PopularCardSkeleton } from '../components/Skeleton'
@@ -11,6 +12,7 @@ const PULL_THRESHOLD = 60
 
 export function Home() {
   const { games, addGame } = useGames()
+  const { showToast, showError } = useToast()
   const [popular, setPopular] = useState<IgdbSearchResult[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -85,6 +87,9 @@ export function Home() {
     setAddingId(result.id)
     try {
       await addGame(igdbResultToNewGame(result))
+      showToast(`${result.name} agregado a tu biblioteca`)
+    } catch (err) {
+      showError(err, 'No se pudo agregar el juego')
     } finally {
       setAddingId(null)
     }

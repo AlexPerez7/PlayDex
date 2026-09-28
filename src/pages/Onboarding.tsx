@@ -11,7 +11,7 @@ const features = [
     Icon: Download,
     title: 'Importa desde Steam',
     description:
-      'Trae tu biblioteca de Steam en segundos y suma horas jugadas y capturas automáticamente.',
+      'Trae tu biblioteca de Steam en segundos, con las horas jugadas reales de cada juego.',
   },
   {
     Icon: BarChart3,
@@ -23,7 +23,13 @@ const features = [
 
 export function Onboarding({ onFinish }: { onFinish: () => void }) {
   return (
-    <div className="flex min-h-screen flex-col px-6 pb-8 pt-12">
+    <div
+      className="flex min-h-dvh flex-col px-6"
+      style={{
+        paddingTop: 'calc(3rem + env(safe-area-inset-top))',
+        paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))',
+      }}
+    >
       <div className="flex flex-1 flex-col items-center">
         <img
           src="/icons/icon-192.png"

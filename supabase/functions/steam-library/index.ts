@@ -35,7 +35,7 @@ serve(async (req) => {
     const steamId = profile?.steam_id
     if (!steamId) {
       return jsonResponse(
-        { error: 'Conectá tu cuenta de Steam primero.' },
+        { error: 'Conecta tu cuenta de Steam primero.' },
         400
       )
     }
@@ -60,7 +60,7 @@ serve(async (req) => {
 
     if (games.length === 0) {
       throw new Error(
-        'Steam no devolvió juegos. Revisá que en la privacidad de tu perfil de Steam, "Mi perfil" y "Detalles del juego" estén en Público.'
+        'Steam no devolvió juegos. Revisa que en la privacidad de tu perfil de Steam, "Mi perfil" y "Detalles del juego" estén en Público.'
       )
     }
 

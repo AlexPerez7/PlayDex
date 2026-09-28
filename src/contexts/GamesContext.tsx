@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { supabase, ensureSession } from '../lib/supabaseClient'
 import type { Game, NewGame } from '../types/game'
@@ -10,6 +10,8 @@ interface GamesContextValue {
   addGame: (game: NewGame) => Promise<Game>
   updateGame: (id: string, changes: Partial<Game>) => Promise<Game>
   deleteGame: (id: string) => Promise<void>
+  /** Relee un juego de la DB (ej. después de que un trigger lo modificó). */
+  refreshGame: (id: string) => Promise<void>
   refetch: () => Promise<void>
 }
 
@@ -19,9 +21,11 @@ export function GamesProvider({ children }: { children: ReactNode }) {
   const [games, setGames] = useState<Game[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  // Una vez que hay datos, las recargas son silenciosas (sin esqueletos).
+  const hasLoaded = useRef(false)
 
   const fetchGames = useCallback(async () => {
-    setLoading(true)
+    if (!hasLoaded.current) setLoading(true)
     await ensureSession()
     const { data, error } = await supabase
       .from('games')
@@ -33,22 +37,35 @@ export function GamesProvider({ children }: { children: ReactNode }) {
     } else {
       setGames(data as Game[])
       setError(null)
+      hasLoaded.current = true
     }
     setLoading(false)
   }, [])
 
   useEffect(() => {
-    // onAuthStateChange dispara un evento INITIAL_SESSION apenas nos
-    // suscribimos (con la sesión ya restaurada o null), así que no hace
-    // falta un fetchGames() aparte al montar. Escuchar todos los eventos
-    // (no solo el inicial) es lo que evita que la biblioteca quede vacía
-    // hasta refrescar: si este provider ya estaba montado sin sesión
-    // cuando el usuario hace login, acá llega el SIGNED_IN posterior y
-    // dispara el refetch con el token ya listo.
+    // onAuthStateChange dispara INITIAL_SESSION apenas nos suscribimos (con la
+    // sesión ya restaurada o null), así que no hace falta un fetch aparte al
+    // montar. SIGNED_IN cubre el caso en que el provider ya estaba montado sin
+    // sesión cuando el usuario hace login.
+    //
+    // Se ignoran TOKEN_REFRESHED y USER_UPDATED: en mobile el token se renueva
+    // cada vez que la PWA vuelve del segundo plano, y recargar ahí hacía
+    // parpadear toda la app con esqueletos.
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(() => {
-      fetchGames()
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        hasLoaded.current = false
+        setGames([])
+        setError(null)
+        setLoading(false)
+        return
+      }
+      if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
+        // Diferido: no se debe llamar a otros métodos de supabase dentro del
+        // callback de onAuthStateChange (puede bloquearse esperando el lock).
+        setTimeout(fetchGames, 0)
+      }
     })
     return () => subscription.unsubscribe()
   }, [fetchGames])
@@ -89,15 +106,25 @@ export function GamesProvider({ children }: { children: ReactNode }) {
     setGames((prev) => prev.filter((g) => g.id !== id))
   }, [])
 
-  const value: GamesContextValue = {
-    games,
-    loading,
-    error,
-    addGame,
-    updateGame,
-    deleteGame,
-    refetch: fetchGames,
-  }
+  const refreshGame = useCallback(async (id: string) => {
+    const { data, error } = await supabase.from('games').select('*').eq('id', id).single()
+    if (error) throw error
+    setGames((prev) => prev.map((g) => (g.id === id ? (data as Game) : g)))
+  }, [])
+
+  const value = useMemo<GamesContextValue>(
+    () => ({
+      games,
+      loading,
+      error,
+      addGame,
+      updateGame,
+      deleteGame,
+      refreshGame,
+      refetch: fetchGames,
+    }),
+    [games, loading, error, addGame, updateGame, deleteGame, refreshGame, fetchGames]
+  )
 
   return <GamesContext.Provider value={value}>{children}</GamesContext.Provider>
 }

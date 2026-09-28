@@ -30,7 +30,7 @@ export function Login() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-6">
+    <div className="flex min-h-dvh flex-col items-center justify-center px-6">
       <h1 className="mb-8 text-3xl font-bold text-accent">PlayDex</h1>
       <form
         onSubmit={handleSubmit}

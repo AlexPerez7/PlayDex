@@ -11,6 +11,7 @@ import {
   type SteamProfile,
 } from '../lib/steam'
 import { useGames } from '../hooks/useGames'
+import { useToast } from '../contexts/ToastContext'
 import { PageContainer } from '../components/PageContainer'
 import { PopularCardSkeleton } from '../components/Skeleton'
 import { GameThumb } from '../components/GameThumb'
@@ -22,12 +23,12 @@ function PrivacyNote() {
       <ul className="list-disc space-y-1 pl-4">
         <li>
           Tu perfil de Steam debe estar <strong>público</strong>: en Steam →
-          Perfil → Editar perfil → Privacidad, poné <em>Mi perfil</em> y{' '}
+          Perfil → Editar perfil → Privacidad, pon <em>Mi perfil</em> y{' '}
           <em>Detalles del juego</em> en <strong>Público</strong>.
         </li>
         <li>
-          Revisá que <em>"Mantener siempre privado mi total de horas jugadas"</em>{' '}
-          esté desactivado, si querés que se importen las horas.
+          Revisa que <em>"Mantener siempre privado mi total de horas jugadas"</em>{' '}
+          esté desactivado, si quieres que se importen las horas.
         </li>
         <li>
           Solo leemos tu lista de juegos y horas jugadas. No publicamos nada ni
@@ -41,6 +42,7 @@ function PrivacyNote() {
 export function SteamImport() {
   const navigate = useNavigate()
   const { games, addGame } = useGames()
+  const { showToast, showError } = useToast()
 
   const [profile, setProfile] = useState<SteamProfile | null>(null)
   const [profileLoading, setProfileLoading] = useState(true)
@@ -80,7 +82,12 @@ export function SteamImport() {
   }
 
   async function handleDisconnect() {
-    await disconnectSteam()
+    try {
+      await disconnectSteam()
+    } catch (err) {
+      showError(err, 'No se pudo desvincular la cuenta')
+      return
+    }
     setProfile(null)
     setLibrary([])
     setError(null)
@@ -94,6 +101,9 @@ export function SteamImport() {
     setAddingAppId(game.appid)
     try {
       await addGame(steamGameToNewGame(game))
+      showToast(`${game.name} importado`)
+    } catch (err) {
+      showError(err, 'No se pudo importar el juego')
     } finally {
       setAddingAppId(null)
     }
@@ -107,7 +117,7 @@ export function SteamImport() {
 
       <h1 className="mb-1 text-xl font-semibold">Importar de Steam</h1>
       <p className="mb-4 text-sm text-lavender">
-        Vinculá tu cuenta de Steam para traer tus juegos con las horas jugadas reales.
+        Vincula tu cuenta de Steam para traer tus juegos con las horas jugadas reales.
       </p>
 
       {/* --- Sin cuenta vinculada --- */}
