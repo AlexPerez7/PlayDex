@@ -1,5 +1,5 @@
 import { supabase } from './supabaseClient'
-import type { NewGame } from '../types/game'
+import type { IgdbSearchResult, NewGame } from '../types/game'
 
 export interface SteamGame {
   appid: number
@@ -94,13 +94,24 @@ export async function getSteamLibrary(): Promise<SteamGame[]> {
   return (await callFn<SteamGame[]>('steam-library')) ?? []
 }
 
-export function steamGameToNewGame(game: SteamGame): NewGame {
+/**
+ * Convierte un juego de Steam en un alta. Si IGDB lo conoce, se completa con
+ * su metadata (portada vertical, géneros, sinopsis, año e igdb_id, que además
+ * habilita la duración estimada exacta). El nombre se mantiene el de Steam.
+ */
+export function steamGameToNewGame(game: SteamGame, igdb?: IgdbSearchResult): NewGame {
   return {
     title: game.name,
     platform: 'PC',
     status: game.hours_played > 0 ? 'jugando' : 'pendiente',
     hours_played: game.hours_played,
-    cover_url: game.cover_url,
+    cover_url: igdb?.cover_url ?? game.cover_url,
     steam_appid: game.appid,
+    ...(igdb && {
+      igdb_id: igdb.id,
+      genre: igdb.genres.join(', '),
+      summary: igdb.summary ?? '',
+      first_release_date: igdb.first_release_date ?? undefined,
+    }),
   }
 }

@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Gamepad2 } from 'lucide-react'
+import { Bookmark, Gamepad2, Plus } from 'lucide-react'
 import { getCachedPopularGames, getPopularGames, igdbResultToNewGame } from '../lib/igdb'
 import { useGames } from '../hooks/useGames'
 import { useToast } from '../contexts/ToastContext'
 import { PageContainer } from '../components/PageContainer'
 import { TagList } from '../components/TagList'
 import { PopularCardSkeleton } from '../components/Skeleton'
-import type { IgdbSearchResult } from '../types/game'
+import type { GameStatus, IgdbSearchResult } from '../types/game'
 
 const PULL_THRESHOLD = 60
 
@@ -88,11 +88,15 @@ export function Home() {
     [games]
   )
 
-  async function handleQuickAdd(result: IgdbSearchResult) {
+  async function handleQuickAdd(result: IgdbSearchResult, status: GameStatus) {
     setAddingId(result.id)
     try {
-      await addGame(igdbResultToNewGame(result))
-      showToast(`${result.name} agregado a tu biblioteca`)
+      await addGame({ ...igdbResultToNewGame(result), status })
+      showToast(
+        status === 'deseado'
+          ? `${result.name} guardado en deseados`
+          : `${result.name} agregado a tu biblioteca`
+      )
     } catch (err) {
       showError(err, 'No se pudo agregar el juego')
     } finally {
@@ -154,17 +158,35 @@ export function Home() {
                   {result.name}
                 </p>
                 <TagList value={result.genres.slice(0, 2).join(', ')} />
-                <button
-                  onClick={() => handleQuickAdd(result)}
-                  disabled={alreadyOwned || addingId === result.id}
-                  className="mt-auto rounded-md bg-primary py-1.5 text-xs font-medium disabled:opacity-40"
-                >
-                  {alreadyOwned
-                    ? 'En tu biblioteca'
-                    : addingId === result.id
-                      ? 'Agregando...'
-                      : '+ Agregar'}
-                </button>
+                {alreadyOwned ? (
+                  <p className="mt-auto flex min-h-10 items-center justify-center rounded-lg bg-primary-dark/20 text-xs text-lavender">
+                    En tu biblioteca
+                  </p>
+                ) : (
+                  <div className="mt-auto flex gap-1.5">
+                    <button
+                      onClick={() => handleQuickAdd(result, 'pendiente')}
+                      disabled={addingId === result.id}
+                      className="flex min-h-10 flex-1 items-center justify-center gap-1 rounded-lg bg-primary text-xs font-semibold text-white disabled:opacity-40"
+                    >
+                      {addingId === result.id ? (
+                        '...'
+                      ) : (
+                        <>
+                          <Plus size={14} /> Agregar
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleQuickAdd(result, 'deseado')}
+                      disabled={addingId === result.id}
+                      aria-label={`Guardar ${result.name} en deseados`}
+                      className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-warning/15 text-warning ring-1 ring-warning/40 disabled:opacity-40"
+                    >
+                      <Bookmark size={16} />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )

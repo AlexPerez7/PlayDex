@@ -1,4 +1,5 @@
 export type GameStatus =
+  | 'deseado'
   | 'pendiente'
   | 'jugando'
   | 'completado'

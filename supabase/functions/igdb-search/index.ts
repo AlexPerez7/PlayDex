@@ -9,6 +9,10 @@
 //                       endpoint oficial game_time_to_beats. Reemplaza al viejo
 //                       scraping de HowLongToBeat, que dependía de un endpoint
 //                       interno no documentado.
+//   - "timeToBeatBatch" -> duración "normal" de varios juegos (`igdbIds`) en
+//                       una sola consulta (estadística de backlog).
+//   - "bySteam"      -> metadata de IGDB para juegos importados de Steam
+//                       (`steamAppIds`), vía external_games.
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
 import { handlePreflight, jsonResponse, errorResponse } from '../_shared/http.ts'
 
@@ -182,12 +186,83 @@ limit ${candidateIds.length};`
   return mapTtb(best)
 }
 
+/** IGDB acepta hasta 500 resultados por consulta. */
+const IGDB_MAX_LIMIT = 500
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const out: T[][] = []
+  for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size))
+  return out
+}
+
+/** Enteros positivos únicos (los ids vienen del cliente: se validan). */
+function toIds(value: unknown): number[] {
+  if (!Array.isArray(value)) return []
+  return [...new Set(value.map(Number).filter((n) => Number.isInteger(n) && n > 0))]
+}
+
+async function timeToBeatBatch(ids: number[]) {
+  const result: Record<number, ReturnType<typeof mapTtb>> = {}
+  for (const part of chunk(ids, IGDB_MAX_LIMIT)) {
+    const rows = (await igdb(
+      'game_time_to_beats',
+      `fields game_id, hastily, normally, completely, count;
+where game_id = (${part.join(',')});
+limit ${part.length};`
+    )) as TimeToBeatRow[]
+    for (const row of rows) result[row.game_id] = mapTtb(row)
+  }
+  return result
+}
+
+interface ExternalGameRow {
+  uid: string
+  game?: IgdbGame
+}
+
+const EXTERNAL_GAME_FIELDS =
+  'fields uid, game.id, game.name, game.cover.url, game.genres.name, game.platforms.name, game.first_release_date, game.summary;'
+
+/**
+ * Busca los juegos de IGDB que corresponden a appids de Steam. IGDB migró el
+ * campo `category` a `external_game_source` (1 = Steam); se prueba el nuevo
+ * y, si la API lo rechaza, el viejo.
+ */
+async function bySteam(appIds: number[]) {
+  const result: Record<number, ReturnType<typeof mapGames>[number]> = {}
+  for (const part of chunk(appIds, IGDB_MAX_LIMIT)) {
+    const uids = part.map((id) => `"${id}"`).join(',')
+    let rows: ExternalGameRow[]
+    try {
+      rows = (await igdb(
+        'external_games',
+        `${EXTERNAL_GAME_FIELDS}
+where external_game_source = 1 & uid = (${uids});
+limit ${part.length};`
+      )) as ExternalGameRow[]
+    } catch {
+      rows = (await igdb(
+        'external_games',
+        `${EXTERNAL_GAME_FIELDS}
+where category = 1 & uid = (${uids});
+limit ${part.length};`
+      )) as ExternalGameRow[]
+    }
+    for (const row of rows) {
+      if (row.game?.id) result[Number(row.uid)] = mapGames([row.game])[0]
+    }
+  }
+  return result
+}
+
 serve(async (req) => {
   const preflight = handlePreflight(req)
   if (preflight) return preflight
 
   try {
-    const { query, mode, igdbId, title } = await req.json().catch(() => ({}))
+    const { query, mode, igdbId, title, igdbIds, steamAppIds } = await req
+      .json()
+      .catch(() => ({}))
 
     if (mode === 'popular') {
       return jsonResponse(await popular())
@@ -195,6 +270,14 @@ serve(async (req) => {
 
     if (mode === 'timeToBeat') {
       return jsonResponse(await timeToBeat(igdbId, title))
+    }
+
+    if (mode === 'timeToBeatBatch') {
+      return jsonResponse(await timeToBeatBatch(toIds(igdbIds)))
+    }
+
+    if (mode === 'bySteam') {
+      return jsonResponse(await bySteam(toIds(steamAppIds)))
     }
 
     if (!query || typeof query !== 'string') {

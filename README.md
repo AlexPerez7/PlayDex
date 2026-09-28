@@ -15,7 +15,7 @@ En producción: https://playdex.netlify.app/
 
 ## Integraciones externas (todas vía Edge Functions de Supabase, nunca desde el frontend)
 
-- **IGDB** (metadata de juegos, populares y duración estimada) — vía Twitch OAuth. Función `igdb-search`, con modos `query` (default), `popular` y `timeToBeat` (endpoint oficial `game_time_to_beats`).
+- **IGDB** (metadata de juegos, populares y duración estimada) — vía Twitch OAuth. Función `igdb-search`, con modos `query` (default), `popular`, `timeToBeat` (endpoint oficial `game_time_to_beats`), `timeToBeatBatch` (varias duraciones en una consulta, para la estadística de backlog) y `bySteam` (metadata de IGDB a partir de appids de Steam, vía `external_games`).
 - **Steam** — cada usuario vincula su cuenta con "Sign in through Steam" (OpenID 2.0, función `steam-auth`); el SteamID64 se guarda en `profiles`. La función `steam-library` lee ese id y trae la biblioteca con horas jugadas reales vía la Steam Web API (key de la app). Requiere perfil de Steam público.
 - **CheapShark** (precios actuales en tiendas de PC, sin API key). Función `game-deals`. Los resultados se cachean en la tabla `price_cache` (TTL 12 h) porque CheapShark limita por IP y los Edge Functions comparten IP; usa `steam_appid` cuando está disponible para un match exacto.
 
@@ -26,16 +26,19 @@ En producción: https://playdex.netlify.app/
 - Login/registro con Supabase Auth, con recuperación de contraseña por email (el origen de la app debe estar en *Authentication → URL Configuration → Redirect URLs* de Supabase)
 - Biblioteca con filtros por estado/plataforma, búsqueda por título y orden (recientes, título, horas, puntaje); los filtros viven en la URL y se conservan al volver de un juego
 - Alta de juegos con búsqueda en IGDB mientras se escribe (portada, plataformas, géneros, sinopsis, año)
-- Vincular la cuenta de Steam ("Sign in through Steam") e importar la biblioteca con horas jugadas reales
+- Vincular la cuenta de Steam ("Sign in through Steam") e importar la biblioteca con horas jugadas reales: de a uno o todos juntos, actualizar horas de los ya importados y completar sus datos (portada, géneros, sinopsis) con IGDB
 - Detalle/edición: estado, plataformas (multi-selección), fechas de inicio/fin, horas jugadas, puntaje (estrellas), notas, reseña
 - Precios actuales en tiendas de PC (CheapShark) para juegos en estado "Pendiente"
 - Duración estimada (IGDB: rápido / normal / completista) en el detalle de cada juego
+- Cronómetro de sesión ("Jugar" / "Terminar"), que sigue contando aunque se cierre la app
 - Registro de sesiones de juego (fecha + minutos), que suman automáticamente a las horas totales (trigger en la DB)
 - Guardado automático en el detalle del juego (sin botón "Guardar")
 - Listas personalizadas (crear, agregar/quitar juegos)
 - Pantalla de Inicio con juegos populares recientes (vía IGDB) y alta rápida a la biblioteca
 - Diario: línea de tiempo con altas, inicios, finalizaciones y sesiones registradas
-- Dashboard con estadísticas (totales, completados, en curso, horas, género favorito, mejor puntuado, más jugado)
+- Estado "Deseado" (wishlist) separado de "Pendiente", con precios de tiendas
+- Biblioteca en vista de lista o de portadas, filtro de favoritos y cambio rápido de estado desde la tarjeta
+- Estadísticas: totales, tiempo estimado para terminar el backlog (IGDB) y a tu ritmo, horas por mes, distribución por estado, destacados y resumen del año para compartir
 - PWA instalable (manifest, ícono, service worker) y responsive (mobile-first, con ajustes para tablet)
 - Rendimiento: rutas con carga diferida, portadas cacheadas por el service worker y biblioteca/populares pintados al instante desde una cache local (se revalidan contra Supabase en segundo plano)
 
@@ -50,7 +53,7 @@ En producción: https://playdex.netlify.app/
    VITE_SUPABASE_URL=
    VITE_SUPABASE_ANON_KEY=
    ```
-3. Ejecutar las migraciones SQL en Supabase, en orden (carpeta `supabase/migrations/`, actualmente 0001 a 0008), o `supabase db push`.
+3. Ejecutar las migraciones SQL en Supabase, en orden (carpeta `supabase/migrations/`, actualmente 0001 a 0009), o `supabase db push`.
    - La `0008` crea un trigger que suma/resta las horas jugadas al registrar/borrar una sesión. El frontend ya no actualiza `hours_played` en ese caso, así que debe aplicarse **antes** de desplegar el frontend.
 4. Configurar los secrets de las Edge Functions (nunca en el frontend) y desplegarlas:
    ```

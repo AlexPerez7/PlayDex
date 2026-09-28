@@ -1,18 +1,35 @@
-import { useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { Gamepad2, Search, X } from 'lucide-react'
+import { Gamepad2, Heart, LayoutGrid, List, Search, X } from 'lucide-react'
 import { SiSteam } from 'react-icons/si'
 import { useGames } from '../hooks/useGames'
 import { GameCard } from '../components/GameCard'
+import { GameCoverCard } from '../components/GameCoverCard'
+import { StatusSheet } from '../components/StatusSheet'
+import { useToast } from '../contexts/ToastContext'
+import { haptic } from '../lib/haptics'
+import { todayISO } from '../lib/dates'
+import { plural } from '../lib/text'
 import { GameCardGridSkeleton } from '../components/Skeleton'
 import { PageContainer } from '../components/PageContainer'
 import { Chip } from '../components/Chip'
 import { parseTags } from '../lib/tags'
 import { statusLabels, statuses } from '../lib/status'
-import type { GameStatus } from '../types/game'
+import type { Game, GameStatus } from '../types/game'
 
 type StatusFilter = GameStatus | 'todos'
 type SortOption = 'recientes' | 'titulo' | 'horas' | 'puntaje'
+type ViewMode = 'lista' | 'portadas'
+
+const VIEW_KEY = 'playdex_library_view'
+
+function readViewPref(): ViewMode {
+  try {
+    return localStorage.getItem(VIEW_KEY) === 'portadas' ? 'portadas' : 'lista'
+  } catch {
+    return 'lista'
+  }
+}
 
 const statusFilters: StatusFilter[] = ['todos', ...statuses]
 
@@ -93,7 +110,37 @@ function EmptyLibrary() {
 
 export function Library() {
   const navigate = useNavigate()
-  const { games, loading, error } = useGames()
+  const { games, loading, error, updateGame } = useGames()
+  const { showToast, showError } = useToast()
+
+  const [view, setView] = useState<ViewMode>(readViewPref)
+  function changeView(next: ViewMode) {
+    setView(next)
+    try {
+      localStorage.setItem(VIEW_KEY, next)
+    } catch {
+      /* preferencia no persistida */
+    }
+  }
+
+  // Cambio rápido de estado desde la tarjeta.
+  const [statusGame, setStatusGame] = useState<Game | null>(null)
+  const closeStatusSheet = useCallback(() => setStatusGame(null), [])
+  async function handleQuickStatus(newStatus: GameStatus) {
+    const game = statusGame
+    setStatusGame(null)
+    if (!game || game.status === newStatus) return
+    haptic()
+    const changes: Partial<Game> = { status: newStatus }
+    if (newStatus === 'jugando' && !game.date_started) changes.date_started = todayISO()
+    if (newStatus === 'completado' && !game.date_finished) changes.date_finished = todayISO()
+    try {
+      await updateGame(game.id, changes)
+      showToast(`${game.title}: ${statusLabels[newStatus]}`)
+    } catch (err) {
+      showError(err, 'No se pudo cambiar el estado')
+    }
+  }
 
   // Los filtros viven en la URL: sobreviven a entrar a un juego y volver,
   // y el Dashboard puede enlazar directo a "completados", por ejemplo.
@@ -103,6 +150,7 @@ export function Library() {
     statusParam && (statuses as string[]).includes(statusParam) ? (statusParam as GameStatus) : 'todos'
   const platformFilter = params.get('plataforma') ?? 'todas'
   const search = params.get('q') ?? ''
+  const onlyFavorites = params.get('fav') === '1'
   const sortParam = params.get('orden') as SortOption | null
   const sortBy: SortOption = sortParam && sortParam in sortLabels ? sortParam : 'recientes'
 
@@ -119,7 +167,7 @@ export function Library() {
   }
 
   const hasFilters =
-    statusFilter !== 'todos' || platformFilter !== 'todas' || search !== ''
+    statusFilter !== 'todos' || platformFilter !== 'todas' || search !== '' || onlyFavorites
 
   const platforms = useMemo(() => {
     const set = new Set(games.flatMap((g) => parseTags(g.platform)))
@@ -135,7 +183,8 @@ export function Library() {
       const matchesPlatform =
         platformFilter === 'todas' || parseTags(g.platform).includes(platformFilter)
       const matchesSearch = query === '' || g.title.toLowerCase().includes(query)
-      return matchesStatus && matchesPlatform && matchesSearch
+      const matchesFavorite = !onlyFavorites || g.is_favorite
+      return matchesStatus && matchesPlatform && matchesSearch && matchesFavorite
     })
 
     // 'recientes' respeta el orden en que llegan de la DB (created_at desc).
@@ -150,7 +199,7 @@ export function Library() {
           return (b.rating ?? 0) - (a.rating ?? 0)
       }
     })
-  }, [games, statusFilter, platformFilter, search, sortBy])
+  }, [games, statusFilter, platformFilter, search, sortBy, onlyFavorites])
 
   const isEmpty = !loading && !error && games.length === 0
 
@@ -160,7 +209,7 @@ export function Library() {
         <h1 className="text-xl font-semibold">Mi biblioteca</h1>
         {!loading && games.length > 0 && (
           <span className="text-sm text-lavender">
-            {hasFilters ? `${sorted.length} de ${games.length}` : `${games.length} juegos`}
+            {hasFilters ? `${sorted.length} de ${games.length}` : plural(games.length, 'juego')}
           </span>
         )}
       </div>
@@ -193,6 +242,45 @@ export function Library() {
                 <X size={16} />
               </button>
             )}
+          </div>
+
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <Chip
+              active={onlyFavorites}
+              onClick={() => setParam('fav', onlyFavorites ? '0' : '1', '0')}
+            >
+              <Heart
+                size={14}
+                className="-ml-0.5 mr-1.5"
+                fill={onlyFavorites ? 'currentColor' : 'none'}
+              />
+              Favoritos
+            </Chip>
+            <div
+              role="group"
+              aria-label="Vista"
+              className="flex rounded-full bg-background-surface p-0.5 ring-1 ring-primary-dark/30"
+            >
+              {(
+                [
+                  ['lista', List, 'Ver como lista'],
+                  ['portadas', LayoutGrid, 'Ver como portadas'],
+                ] as const
+              ).map(([mode, Icon, label]) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => changeView(mode)}
+                  aria-label={label}
+                  aria-pressed={view === mode}
+                  className={`flex h-10 w-11 items-center justify-center rounded-full ${
+                    view === mode ? 'bg-accent text-primary-darker' : 'text-lavender'
+                  }`}
+                >
+                  <Icon size={18} />
+                </button>
+              ))}
+            </div>
           </div>
 
           <ChipRow
@@ -242,11 +330,37 @@ export function Library() {
                 </div>
               )}
 
-              <div className="flex flex-col gap-2 sm:grid sm:grid-cols-2 lg:grid-cols-3">
-                {sorted.map((game) => (
-                  <GameCard key={game.id} game={game} onClick={(g) => navigate(`/game/${g.id}`)} />
-                ))}
-              </div>
+              {view === 'portadas' ? (
+                <div className="grid grid-cols-3 gap-x-3 gap-y-4 sm:grid-cols-4 lg:grid-cols-6">
+                  {sorted.map((game) => (
+                    <GameCoverCard
+                      key={game.id}
+                      game={game}
+                      onClick={(g) => navigate(`/game/${g.id}`)}
+                      onStatusClick={setStatusGame}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2 sm:grid sm:grid-cols-2 lg:grid-cols-3">
+                  {sorted.map((game) => (
+                    <GameCard
+                      key={game.id}
+                      game={game}
+                      onClick={(g) => navigate(`/game/${g.id}`)}
+                      onStatusClick={setStatusGame}
+                    />
+                  ))}
+                </div>
+              )}
+
+              <StatusSheet
+                open={statusGame != null}
+                onClose={closeStatusSheet}
+                value={statusGame?.status ?? 'pendiente'}
+                onChange={handleQuickStatus}
+                title={statusGame?.title ?? 'Cambiar estado'}
+              />
             </>
           )}
         </>

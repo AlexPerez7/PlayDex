@@ -6,6 +6,8 @@ import { ListsProvider } from './contexts/ListsContext'
 import { ToastProvider } from './contexts/ToastContext'
 import { ConfirmProvider } from './contexts/ConfirmContext'
 import { ScrollManager } from './components/ScrollManager'
+import { SessionTimerProvider } from './contexts/SessionTimerContext'
+import { TimerBanner } from './components/TimerBanner'
 import { BottomNav } from './components/BottomNav'
 import { Library } from './pages/Library'
 
@@ -101,6 +103,7 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
+        <TimerBanner />
         <BottomNav />
       </div>
     )
@@ -110,7 +113,9 @@ function App() {
     <ToastProvider>
       <ConfirmProvider>
         <GamesProvider>
-          <ListsProvider>{content}</ListsProvider>
+          <ListsProvider>
+            <SessionTimerProvider>{content}</SessionTimerProvider>
+          </ListsProvider>
         </GamesProvider>
       </ConfirmProvider>
     </ToastProvider>

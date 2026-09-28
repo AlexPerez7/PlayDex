@@ -21,6 +21,7 @@ import {
   MoreVertical,
   Pencil,
   Play,
+  Square,
   Plus,
   Repeat,
   SlidersHorizontal,
@@ -31,13 +32,14 @@ import {
   X,
 } from 'lucide-react'
 import { useGames } from '../hooks/useGames'
+import { supabase } from '../lib/supabaseClient'
 import { usePlaySessions } from '../hooks/usePlaySessions'
 import { useLists, useGameListIds } from '../hooks/useLists'
 import { StarRating } from '../components/StarRating'
 import { TagList } from '../components/TagList'
 import { PlatformPicker } from '../components/PlatformPicker'
 import { FormatPicker } from '../components/FormatPicker'
-import { BottomSheet } from '../components/BottomSheet'
+import { StatusSheet } from '../components/StatusSheet'
 import { ProgressRing } from '../components/ProgressRing'
 import { SectionCard } from '../components/SectionCard'
 import { GameDeals } from '../components/GameDeals'
@@ -45,7 +47,9 @@ import { GameThumb } from '../components/GameThumb'
 import { TimeToBeat } from '../components/TimeToBeat'
 import { Skeleton } from '../components/Skeleton'
 import { PageContainer } from '../components/PageContainer'
-import { statusColors, statusIcons, statusLabels, statuses } from '../lib/status'
+import { showsDeals, statusColors, statusLabels } from '../lib/status'
+import { haptic } from '../lib/haptics'
+import { formatElapsed, useNow, useSessionTimer } from '../contexts/SessionTimerContext'
 import { formatDate, sessionTimestamp, todayISO } from '../lib/dates'
 import { useToast } from '../contexts/ToastContext'
 import { useConfirm } from '../contexts/ConfirmContext'
@@ -90,6 +94,9 @@ export function GameDetail() {
   const { games, loading, updateGame, deleteGame, refreshGame } = useGames()
   const { showToast, showError } = useToast()
   const confirm = useConfirm()
+  const sessionTimer = useSessionTimer()
+  const timerHere = sessionTimer.timer?.gameId === id ? sessionTimer.timer : null
+  const now = useNow(timerHere != null)
   const game = games.find((g) => g.id === id)
   // Se pasa el id de la URL (no game?.id) para que estas consultas no
   // esperen a que termine de cargar toda la biblioteca antes de arrancar.
@@ -240,12 +247,14 @@ export function GameDetail() {
 
   function toggleFavorite() {
     if (!current) return
+    haptic()
     setField({ is_favorite: !current.is_favorite }, { immediate: true })
   }
 
   function handleStatusChange(newStatus: Game['status']) {
     if (!current) return
     setStatusOpen(false)
+    haptic()
     const changes: Partial<Game> = { status: newStatus }
     // Completar las fechas automáticamente: el Diario se arma con ellas.
     if (newStatus === 'jugando' && !current.date_started) {
@@ -276,6 +285,7 @@ export function GameDetail() {
     setSessionError(null)
     try {
       await registerSession(minutes, sessionTimestamp(sessionDate))
+      haptic()
       setSessionMinutes('')
       showToast(`Sesión de ${minutes} min registrada`)
     } catch (err) {
@@ -283,12 +293,65 @@ export function GameDetail() {
     }
   }
 
-  async function handleQuickSession() {
+  async function handleStartTimer() {
+    if (!game) return
+    const other = sessionTimer.timer
+    if (other && other.gameId !== game.id) {
+      const ok = await confirm({
+        title: 'Ya hay un cronómetro corriendo',
+        message: `Se está midiendo una sesión de ${other.title}. ¿Detenerla (se guarda) y empezar con este juego?`,
+        confirmLabel: 'Detener y empezar',
+      })
+      if (!ok) return
+      const stopped = sessionTimer.stop()
+      if (stopped) {
+        // La sesión es de otro juego: se inserta directo con su game_id.
+        await addSessionFor(stopped.gameId, stopped.minutes, stopped.startedAt)
+      }
+    }
+    sessionTimer.start(game.id, game.title)
+    haptic()
+    // Empezar a jugar un juego pendiente lo pasa a "Jugando".
+    if (current && (current.status === 'pendiente' || current.status === 'en_pausa')) {
+      handleStatusChange('jugando')
+    }
+  }
+
+  async function handleStopTimer() {
+    const stopped = sessionTimer.stop()
+    if (!stopped) return
+    haptic([10, 40, 10])
     try {
-      await registerSession(30, new Date().toISOString())
-      showToast('+30 min sumados')
+      await registerSession(stopped.minutes, new Date(stopped.startedAt).toISOString())
+      showToast(`Sesión de ${stopped.minutes} min registrada`)
     } catch (err) {
       showError(err, 'Error al guardar la sesión')
+    }
+  }
+
+  async function handleCancelTimer() {
+    const ok = await confirm({
+      title: '¿Descartar el cronómetro?',
+      message: 'El tiempo medido no se va a guardar.',
+      confirmLabel: 'Descartar',
+      danger: true,
+    })
+    if (ok) sessionTimer.cancel()
+  }
+
+  /** Sesión para un juego distinto al que se está viendo. */
+  async function addSessionFor(gameId: string, minutes: number, startedAt: number) {
+    try {
+      const { error } = await supabase.from('play_sessions').insert({
+        game_id: gameId,
+        duration_minutes: minutes,
+        played_at: new Date(startedAt).toISOString(),
+      })
+      if (error) throw error
+      await refreshGame(gameId)
+      showToast(`Sesión de ${minutes} min guardada`)
+    } catch (err) {
+      showError(err, 'No se pudo guardar la sesión anterior')
     }
   }
 
@@ -445,40 +508,12 @@ export function GameDetail() {
               {statusLabels[status]}
               <ChevronDown size={14} />
             </button>
-            <BottomSheet
+            <StatusSheet
               open={statusOpen}
               onClose={closeStatusSheet}
-              title="Cambiar estado"
-            >
-              <div className="flex flex-col gap-1">
-                {statuses.map((s) => {
-                  const StatusIcon = statusIcons[s]
-                  const active = s === status
-                  return (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => handleStatusChange(s)}
-                      className={`flex items-center gap-3 rounded-xl px-3 py-3 text-left ${
-                        active ? 'bg-accent/10' : 'active:bg-primary-dark/10'
-                      }`}
-                    >
-                      <span
-                        className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full ${statusColors[s]}`}
-                      >
-                        <StatusIcon size={18} />
-                      </span>
-                      <span
-                        className={`flex-1 text-sm font-medium ${active ? 'text-accent' : 'text-ink'}`}
-                      >
-                        {statusLabels[s]}
-                      </span>
-                      {active && <Check size={18} className="text-accent" />}
-                    </button>
-                  )
-                })}
-              </div>
-            </BottomSheet>
+              value={status}
+              onChange={handleStatusChange}
+            />
             <button
               onClick={toggleFavorite}
               aria-label={current.is_favorite ? 'Quitar de favoritos' : 'Marcar como favorito'}
@@ -561,15 +596,40 @@ export function GameDetail() {
                   >
                     <Pencil size={16} />
                   </button>
-                  <button
-                    onClick={handleQuickSession}
-                    aria-label="Sumar 30 minutos"
-                    className="flex h-11 items-center gap-1.5 rounded-full bg-primary-dark/20 px-3.5 text-sm font-medium text-accent"
-                  >
-                    <Play size={14} fill="currentColor" /> 30 min
-                  </button>
+                  {!timerHere && (
+                    <button
+                      onClick={handleStartTimer}
+                      className="flex h-11 items-center gap-1.5 rounded-full bg-accent px-4 text-sm font-semibold text-primary-darker active:scale-95"
+                    >
+                      <Play size={14} fill="currentColor" /> Jugar
+                    </button>
+                  )}
                 </div>
               </div>
+
+              {timerHere && (
+                <div className="mt-3 flex items-center gap-2 rounded-xl bg-accent/15 p-3 ring-1 ring-accent/40">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs text-lavender">Sesión en curso</p>
+                    <p className="text-2xl font-bold tabular-nums text-ink" aria-live="off">
+                      {formatElapsed(now - timerHere.startedAt)}
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleCancelTimer}
+                    aria-label="Descartar cronómetro"
+                    className="flex h-11 w-11 items-center justify-center rounded-full text-lavender active:bg-primary-dark/20"
+                  >
+                    <X size={18} />
+                  </button>
+                  <button
+                    onClick={handleStopTimer}
+                    className="flex h-11 items-center gap-1.5 rounded-full bg-accent px-4 text-sm font-semibold text-primary-darker active:scale-95"
+                  >
+                    <Square size={14} fill="currentColor" /> Terminar
+                  </button>
+                </div>
+              )}
               {editingHours && (
                 <input
                   type="number"
@@ -671,7 +731,7 @@ export function GameDetail() {
 
             {/* Estas dos secciones incluyen su propia tarjeta y no se muestran
                 si no hay datos (juego de consola sin precios, IGDB sin tiempos). */}
-            {status === 'pendiente' && (
+            {showsDeals(status) && (
               <GameDeals title={game.title} steamAppId={game.steam_appid} />
             )}
 

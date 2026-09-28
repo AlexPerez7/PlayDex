@@ -59,6 +59,37 @@ export async function getTimeToBeat(params: {
   return data ?? null
 }
 
+/**
+ * Duración de varios juegos en una sola llamada (por igdb_id). Los juegos sin
+ * datos no aparecen en el resultado.
+ */
+export async function getTimeToBeatBatch(igdbIds: number[]): Promise<Record<number, TimeToBeat>> {
+  if (igdbIds.length === 0) return {}
+  const { data, error } = await supabase.functions.invoke<Record<number, TimeToBeat | null>>(
+    'igdb-search',
+    { body: { mode: 'timeToBeatBatch', igdbIds } }
+  )
+  if (error) throw error
+  const result: Record<number, TimeToBeat> = {}
+  for (const [id, ttb] of Object.entries(data ?? {})) if (ttb) result[Number(id)] = ttb
+  return result
+}
+
+/** Metadata de IGDB para appids de Steam (los que IGDB no conoce no aparecen). */
+export async function getIgdbBySteamAppIds(
+  steamAppIds: number[]
+): Promise<Record<number, IgdbSearchResult>> {
+  if (steamAppIds.length === 0) return {}
+  const { data, error } = await supabase.functions.invoke<Record<number, IgdbSearchResult>>(
+    'igdb-search',
+    { body: { mode: 'bySteam', steamAppIds } }
+  )
+  if (error) throw error
+  // Una versión vieja de la función (sin este modo) responde con un error o
+  // con otra forma: se trata como "sin datos".
+  return data && typeof data === 'object' && !Array.isArray(data) ? data : {}
+}
+
 export function igdbResultToNewGame(result: IgdbSearchResult): NewGame {
   return {
     title: result.name,

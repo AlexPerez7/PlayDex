@@ -9,6 +9,8 @@ interface GamesContextValue {
   loading: boolean
   error: string | null
   addGame: (game: NewGame) => Promise<Game>
+  /** Alta en lote (importación masiva): un insert por cada 200 juegos. */
+  addGames: (games: NewGame[]) => Promise<Game[]>
   updateGame: (id: string, changes: Partial<Game>) => Promise<Game>
   deleteGame: (id: string) => Promise<void>
   /** Relee un juego de la DB (ej. después de que un trigger lo modificó). */
@@ -114,6 +116,24 @@ export function GamesProvider({ children }: { children: ReactNode }) {
     return data as Game
   }, [])
 
+  const addGames = useCallback(async (newGames: NewGame[]) => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) throw new Error('No hay sesión activa')
+
+    const created: Game[] = []
+    for (let i = 0; i < newGames.length; i += 200) {
+      const rows = newGames.slice(i, i + 200).map((g) => ({ ...g, user_id: user.id }))
+      const { data, error } = await supabase.from('games').insert(rows).select()
+      if (error) throw error
+      created.push(...(data as Game[]))
+      // Actualizar por tandas para que se vea el avance.
+      setGames((prev) => [...(data as Game[]), ...prev])
+    }
+    return created
+  }, [])
+
   const updateGame = useCallback(async (id: string, changes: Partial<Game>) => {
     const { data, error } = await supabase
       .from('games')
@@ -145,12 +165,13 @@ export function GamesProvider({ children }: { children: ReactNode }) {
       loading,
       error,
       addGame,
+      addGames,
       updateGame,
       deleteGame,
       refreshGame,
       refetch: fetchGames,
     }),
-    [games, loading, error, addGame, updateGame, deleteGame, refreshGame, fetchGames]
+    [games, loading, error, addGame, addGames, updateGame, deleteGame, refreshGame, fetchGames]
   )
 
   return <GamesContext.Provider value={value}>{children}</GamesContext.Provider>

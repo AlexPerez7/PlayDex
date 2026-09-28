@@ -7,6 +7,7 @@ import { GameCard } from '../components/GameCard'
 import { GameCardGridSkeleton } from '../components/Skeleton'
 import { PageContainer } from '../components/PageContainer'
 import { useToast } from '../contexts/ToastContext'
+import { plural } from '../lib/text'
 import type { Game } from '../types/game'
 
 export function ListDetail() {
@@ -53,7 +54,7 @@ export function ListDetail() {
 
       <div className="mb-4 flex items-baseline justify-between gap-2">
         <h1 className="min-w-0 truncate text-xl font-semibold">{list?.name ?? 'Lista'}</h1>
-        {!loading && <span className="text-sm text-lavender">{listGames.length} juegos</span>}
+        {!loading && <span className="text-sm text-lavender">{plural(listGames.length, 'juego')}</span>}
       </div>
 
       {loading && <GameCardGridSkeleton count={3} />}
