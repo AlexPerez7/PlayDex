@@ -4,6 +4,7 @@ import {
   BookOpen,
   Calendar,
   AlertCircle,
+  ArrowLeft,
   Check,
   CheckCircle2,
   ChevronDown,
@@ -12,7 +13,6 @@ import {
   Disc,
   Gamepad2,
   Heart,
-  Hourglass,
   Info,
   Layers,
   ListChecks,
@@ -23,9 +23,10 @@ import {
   Play,
   Plus,
   Repeat,
-  ShoppingCart,
+  SlidersHorizontal,
   StickyNote,
   Tag,
+  Trash2,
   Trophy,
   X,
 } from 'lucide-react'
@@ -47,6 +48,9 @@ import { PageContainer } from '../components/PageContainer'
 import { statusColors, statusIcons, statusLabels, statuses } from '../lib/status'
 import { formatDate, sessionTimestamp, todayISO } from '../lib/dates'
 import { useToast } from '../contexts/ToastContext'
+import { useConfirm } from '../contexts/ConfirmContext'
+import { Chip } from '../components/Chip'
+import type { PlaySession } from '../types/game'
 import type { Game } from '../types/game'
 
 type SaveState = 'idle' | 'saving' | 'saved' | 'error'
@@ -63,12 +67,29 @@ function heroCover(url: string | null): string | null {
 /** Espera tras el último cambio antes de guardar (campos de texto, sliders). */
 const AUTOSAVE_DELAY = 800
 
+/** Duraciones rápidas para registrar una sesión sin teclear. */
+const QUICK_MINUTES = [15, 30, 45, 60, 90, 120]
+
+const MORE_DETAILS_KEY = 'playdex_detail_more_open'
+
+const inputClass =
+  'w-full rounded-xl bg-background/40 px-3 py-2.5 text-sm text-ink ring-1 ring-primary-dark/30 focus:outline-none focus:ring-2 focus:ring-primary'
+
+function readMoreDetailsPref() {
+  try {
+    return localStorage.getItem(MORE_DETAILS_KEY) === 'true'
+  } catch {
+    return false
+  }
+}
+
 export function GameDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const location = useLocation()
   const { games, loading, updateGame, deleteGame, refreshGame } = useGames()
   const { showToast, showError } = useToast()
+  const confirm = useConfirm()
   const game = games.find((g) => g.id === id)
   // Se pasa el id de la URL (no game?.id) para que estas consultas no
   // esperen a que termine de cargar toda la biblioteca antes de arrancar.
@@ -152,7 +173,34 @@ export function GameDetail() {
   const [editingProgress, setEditingProgress] = useState(false)
   const [editingHours, setEditingHours] = useState(false)
   const [descExpanded, setDescExpanded] = useState(false)
+  const [moreOpen, setMoreOpen] = useState(readMoreDetailsPref)
   const notesRef = useRef<HTMLDivElement>(null)
+  const closeStatusSheet = useCallback(() => setStatusOpen(false), [])
+
+  function toggleMoreDetails() {
+    setMoreOpen((open) => {
+      try {
+        localStorage.setItem(MORE_DETAILS_KEY, String(!open))
+      } catch {
+        /* preferencia no persistida: no pasa nada */
+      }
+      return !open
+    })
+  }
+
+  // Cabecera compacta: aparece cuando el título grande sale de pantalla.
+  const titleRef = useRef<HTMLHeadingElement>(null)
+  const [compactVisible, setCompactVisible] = useState(false)
+  const gameLoaded = game != null
+  useEffect(() => {
+    const el = titleRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(([entry]) =>
+      setCompactVisible(!entry.isIntersecting && entry.boundingClientRect.top < 0)
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [gameLoaded])
 
   const current = game ? { ...game, ...draft } : undefined
   const status = current?.status ?? 'pendiente'
@@ -171,7 +219,14 @@ export function GameDetail() {
   async function handleDelete() {
     if (!game) return
     setMenuOpen(false)
-    if (!confirm(`¿Eliminar "${game.title}" de tu biblioteca?`)) return
+    const ok = await confirm({
+      title: `¿Eliminar "${game.title}"?`,
+      message:
+        'Se borra de tu biblioteca junto con sus sesiones registradas y se quita de tus listas. No se puede deshacer.',
+      confirmLabel: 'Eliminar juego',
+      danger: true,
+    })
+    if (!ok) return
     try {
       clearTimeout(saveTimer.current)
       draftRef.current = {}
@@ -203,12 +258,12 @@ export function GameDetail() {
   }
 
   /** Registra una sesión; las horas las suma un trigger en la DB. */
-  async function registerSession(minutes: number, playedAt: string) {
+  async function registerSession(minutes: number, playedAt: string, notes?: string | null) {
     if (!game) return
     // Mandar antes cualquier edición manual de horas pendiente, para que el
     // trigger sume sobre el valor correcto.
     await flush()
-    await addSession(minutes, playedAt)
+    await addSession(minutes, playedAt, notes ?? undefined)
     await refreshGame(game.id)
   }
 
@@ -237,12 +292,24 @@ export function GameDetail() {
     }
   }
 
-  async function handleDeleteSession(sessionId: string) {
+  async function handleDeleteSession(session: PlaySession) {
     if (!game) return
     try {
       await flush()
-      await deleteSession(sessionId)
+      await deleteSession(session.id)
       await refreshGame(game.id)
+      showToast(`Sesión de ${session.duration_minutes} min eliminada`, {
+        duration: 5000,
+        action: {
+          label: 'Deshacer',
+          onClick: () => {
+            // Se vuelve a insertar (el trigger vuelve a sumar las horas).
+            registerSession(session.duration_minutes, session.played_at, session.notes).catch(
+              (err) => showError(err, 'No se pudo restaurar la sesión')
+            )
+          },
+        },
+      })
     } catch (err) {
       showError(err, 'No se pudo eliminar la sesión')
     }
@@ -346,10 +413,22 @@ export function GameDetail() {
         </div>
       </div>
 
+      <CompactHeader
+        visible={compactVisible}
+        title={game.title}
+        isFavorite={current.is_favorite}
+        saveState={saveState}
+        onBack={goBack}
+        onRetry={flush}
+        onToggleFavorite={toggleFavorite}
+      />
+
       <PageContainer belowHero>
         <div className="mx-auto md:max-w-xl">
           <div className="flex items-start justify-between gap-3">
-            <h1 className="min-w-0 text-2xl font-bold">{game.title}</h1>
+            <h1 ref={titleRef} className="min-w-0 text-2xl font-bold">
+              {game.title}
+            </h1>
             <SaveIndicator state={saveState} onRetry={flush} />
           </div>
           {game.first_release_date && (
@@ -361,14 +440,14 @@ export function GameDetail() {
           <div className="mb-5 mt-3 flex items-center gap-2">
             <button
               onClick={() => setStatusOpen(true)}
-              className={`flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium ${statusColors[status]}`}
+              className={`flex min-h-11 items-center gap-1.5 rounded-full px-4 text-sm font-medium ${statusColors[status]}`}
             >
               {statusLabels[status]}
               <ChevronDown size={14} />
             </button>
             <BottomSheet
               open={statusOpen}
-              onClose={() => setStatusOpen(false)}
+              onClose={closeStatusSheet}
               title="Cambiar estado"
             >
               <div className="flex flex-col gap-1">
@@ -404,7 +483,7 @@ export function GameDetail() {
               onClick={toggleFavorite}
               aria-label={current.is_favorite ? 'Quitar de favoritos' : 'Marcar como favorito'}
               aria-pressed={current.is_favorite}
-              className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full ring-1 ring-primary-dark/30 ${
+              className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full ring-1 ring-primary-dark/30 ${
                 current.is_favorite ? 'bg-accent text-primary-darker' : 'bg-background-surface text-lavender'
               }`}
             >
@@ -413,7 +492,7 @@ export function GameDetail() {
             <button
               onClick={() => notesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
               aria-label="Ir a notas y reseña"
-              className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-background-surface text-lavender ring-1 ring-primary-dark/30"
+              className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-background-surface text-lavender ring-1 ring-primary-dark/30"
             >
               <StickyNote size={18} />
             </button>
@@ -427,9 +506,10 @@ export function GameDetail() {
                 <button
                   onClick={() => setEditingProgress((v) => !v)}
                   aria-label="Editar progreso"
-                  className="flex h-7 w-7 items-center justify-center rounded-full text-lavender active:bg-primary-dark/20"
+                  aria-expanded={editingProgress}
+                  className="-m-2 flex h-11 w-11 items-center justify-center rounded-full text-lavender active:bg-primary-dark/20"
                 >
-                  <Pencil size={14} />
+                  <Pencil size={16} />
                 </button>
               }
             >
@@ -448,7 +528,7 @@ export function GameDetail() {
                       ['completionist_percent', '100%', completionistPercent],
                     ] as const
                   ).map(([key, label, value]) => (
-                    <div key={key}>
+                    <label key={key} className="block">
                       <div className="mb-1 flex items-center justify-between text-xs text-lavender">
                         <span>{label}</span>
                         <span>{value}%</span>
@@ -457,11 +537,12 @@ export function GameDetail() {
                         type="range"
                         min={0}
                         max={100}
+                        step={5}
                         value={value}
                         onChange={(e) => setField({ [key]: Number(e.target.value) })}
-                        className="w-full accent-accent"
+                        className="h-8 w-full accent-accent"
                       />
-                    </div>
+                    </label>
                   ))}
                 </div>
               )}
@@ -475,17 +556,17 @@ export function GameDetail() {
                   <button
                     onClick={() => setEditingHours((v) => !v)}
                     aria-label="Editar horas"
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-dark/20 text-lavender"
+                    aria-expanded={editingHours}
+                    className="flex h-11 w-11 items-center justify-center rounded-full bg-primary-dark/20 text-lavender"
                   >
-                    <Pencil size={14} />
+                    <Pencil size={16} />
                   </button>
                   <button
                     onClick={handleQuickSession}
-                    title="Sumar 30 min"
                     aria-label="Sumar 30 minutos"
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-dark/20 text-accent"
+                    className="flex h-11 items-center gap-1.5 rounded-full bg-primary-dark/20 px-3.5 text-sm font-medium text-accent"
                   >
-                    <Play size={14} fill="currentColor" />
+                    <Play size={14} fill="currentColor" /> 30 min
                   </button>
                 </div>
               </div>
@@ -495,6 +576,7 @@ export function GameDetail() {
                   inputMode="decimal"
                   min={0}
                   step="0.5"
+                  aria-label="Horas jugadas"
                   value={hoursText ?? String(current.hours_played ?? 0)}
                   onChange={(e) => {
                     const raw = e.target.value
@@ -505,7 +587,7 @@ export function GameDetail() {
                     }
                   }}
                   onBlur={() => setHoursText(null)}
-                  className="mt-2 w-full rounded-md bg-background/40 px-3 py-2 text-sm text-ink ring-1 ring-primary-dark/30 focus:outline-none focus:ring-2 focus:ring-primary"
+                  className={`mt-2 ${inputClass}`}
                 />
               )}
 
@@ -517,193 +599,48 @@ export function GameDetail() {
               </div>
             </SectionCard>
 
-            {status === 'pendiente' && (
-              <SectionCard icon={ShoppingCart} title="Dónde comprarlo">
-                <GameDeals title={game.title} steamAppId={game.steam_appid} />
-              </SectionCard>
-            )}
-
-            <SectionCard icon={Gamepad2} title="Plataforma">
-              <PlatformPicker
-                value={current.platform}
-                onChange={(platform) => setField({ platform })}
-              />
-            </SectionCard>
-
-            <SectionCard icon={Hourglass} title="Tiempo para terminar">
-              <TimeToBeat igdbId={game.igdb_id} title={game.title} />
-            </SectionCard>
-
-            <SectionCard icon={Disc} title="Formato">
-              <FormatPicker
-                value={current.format}
-                onChange={(format) => setField({ format })}
-              />
-            </SectionCard>
-
-            <SectionCard icon={Layers} title="Franquicia">
-              <input
-                value={current.franchise ?? ''}
-                onChange={(e) => setField({ franchise: e.target.value })}
-                placeholder="Ej. Final Fantasy"
-                className="w-full rounded-md bg-background/40 px-3 py-2 text-sm text-ink ring-1 ring-primary-dark/30 focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </SectionCard>
-
-            <SectionCard icon={Repeat} title="Replays">
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setField({ replays: Math.max(0, (current.replays ?? 0) - 1) })
-                  }
-                  className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary-dark/20 text-lavender"
-                >
-                  <Minus size={14} />
-                </button>
-                <span className="w-6 text-center text-lg font-semibold text-ink">
-                  {current.replays ?? 0}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setField({ replays: (current.replays ?? 0) + 1 })}
-                  className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary-dark/20 text-lavender"
-                >
-                  <Plus size={14} />
-                </button>
-              </div>
-            </SectionCard>
-
-            <SectionCard icon={Tag} title="Etiquetas">
-              <div className="mb-2">
-                <TagList value={current.genre} />
-              </div>
-              <input
-                value={current.genre ?? ''}
-                onChange={(e) => setField({ genre: e.target.value })}
-                placeholder="Separa varios con coma"
-                className="w-full rounded-md bg-background/40 px-3 py-2 text-sm text-ink ring-1 ring-primary-dark/30 focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-            </SectionCard>
-
-            {game.summary && (
-              <SectionCard icon={Info} title="Acerca de">
-                <p className={`text-sm text-lavender ${!descExpanded ? 'line-clamp-4' : ''}`}>
-                  {game.summary}
-                </p>
-                <button
-                  onClick={() => setDescExpanded((v) => !v)}
-                  className="mt-1 text-xs font-medium text-accent"
-                >
-                  {descExpanded ? 'Leer menos' : 'Leer más'}
-                </button>
-              </SectionCard>
-            )}
-
-            <SectionCard icon={Calendar} title="Fechas">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1 block text-xs text-lavender">Fecha inicio</label>
-                  <input
-                    type="date"
-                    value={current.date_started ?? ''}
-                    onChange={(e) => setField({ date_started: e.target.value || null })}
-                    className="w-full rounded-md bg-background/40 px-3 py-2 text-sm text-ink ring-1 ring-primary-dark/30 focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs text-lavender">Fecha fin</label>
-                  <input
-                    type="date"
-                    value={current.date_finished ?? ''}
-                    onChange={(e) => setField({ date_finished: e.target.value || null })}
-                    className="w-full rounded-md bg-background/40 px-3 py-2 text-sm text-ink ring-1 ring-primary-dark/30 focus:outline-none focus:ring-2 focus:ring-primary"
-                  />
-                </div>
-              </div>
-            </SectionCard>
-
-            <div ref={notesRef}>
-              <SectionCard icon={StickyNote} title="Notas y reseña">
-                <div className="flex flex-col gap-3">
-                  <div>
-                    <label className="mb-1 block text-xs text-lavender">Notas</label>
-                    <textarea
-                      value={current.notes ?? ''}
-                      onChange={(e) => setField({ notes: e.target.value })}
-                      rows={3}
-                      placeholder="Notas de progreso, spoilers, pendientes..."
-                      className="w-full rounded-md bg-background/40 px-3 py-2.5 text-sm text-ink ring-1 ring-primary-dark/30 focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs text-lavender">Reseña</label>
-                    <textarea
-                      value={current.review ?? ''}
-                      onChange={(e) => setField({ review: e.target.value })}
-                      rows={4}
-                      placeholder="Tu opinión sobre el juego..."
-                      className="w-full rounded-md bg-background/40 px-3 py-2.5 text-sm text-ink ring-1 ring-primary-dark/30 focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
-                  </div>
-                </div>
-              </SectionCard>
-            </div>
-
-            <SectionCard icon={ClipboardList} title="Mis listas">
-              {lists.length === 0 ? (
-                <p className="text-sm text-lavender">
-                  No tienes listas todavía. Crea una desde la pestaña "Listas".
-                </p>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {lists.map((list) => {
-                    const active = listIds.has(list.id)
-                    return (
-                      <button
-                        key={list.id}
-                        type="button"
-                        onClick={() => handleToggleList(list.id)}
-                        className={`rounded-full px-3 py-1 text-xs ${
-                          active
-                            ? 'bg-accent text-primary-darker'
-                            : 'bg-background/40 text-lavender ring-1 ring-primary-dark/30'
-                        }`}
-                      >
-                        {active ? '✓ ' : '+ '}
-                        {list.name}
-                      </button>
-                    )
-                  })}
-                </div>
-              )}
-            </SectionCard>
-
             <SectionCard icon={Clock} title="Sesiones de juego">
-              <div className="mb-3 flex flex-col gap-2">
-                <input
-                  type="date"
-                  value={sessionDate}
-                  onChange={(e) => setSessionDate(e.target.value)}
-                  className="w-full rounded-md bg-background/40 px-3 py-2 text-sm text-ink ring-1 ring-primary-dark/30 focus:outline-none focus:ring-primary"
-                />
-                <div className="flex gap-2">
+              <div className="mb-3 flex flex-col gap-3">
+                <div className="flex flex-wrap gap-x-2 gap-y-3">
+                  {QUICK_MINUTES.map((m) => (
+                    <Chip
+                      key={m}
+                      active={sessionMinutes === String(m)}
+                      onClick={() => setSessionMinutes(String(m))}
+                      inactiveClassName="bg-background/40 text-lavender ring-1 ring-primary-dark/30"
+                    >
+                      {m < 60 ? `${m} min` : `${m / 60} h`}
+                    </Chip>
+                  ))}
+                </div>
+                <div className="grid grid-cols-2 gap-2">
                   <input
                     type="number"
+                    inputMode="numeric"
                     min={1}
                     placeholder="Minutos"
+                    aria-label="Minutos jugados"
                     value={sessionMinutes}
                     onChange={(e) => setSessionMinutes(e.target.value)}
-                    className="min-w-0 flex-1 rounded-md bg-background/40 px-3 py-2 text-sm text-ink ring-1 ring-primary-dark/30 focus:outline-none focus:ring-primary"
+                    className={`min-w-0 ${inputClass}`}
                   />
-                  <button
-                    type="button"
-                    onClick={handleAddSession}
-                    className="flex-shrink-0 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white"
-                  >
-                    Agregar
-                  </button>
+                  <input
+                    type="date"
+                    aria-label="Fecha de la sesión"
+                    value={sessionDate}
+                    max={todayISO()}
+                    onChange={(e) => setSessionDate(e.target.value)}
+                    className={`min-w-0 ${inputClass}`}
+                  />
                 </div>
+                <button
+                  type="button"
+                  onClick={handleAddSession}
+                  disabled={!sessionMinutes}
+                  className="min-h-11 rounded-xl bg-primary text-sm font-semibold text-white disabled:opacity-40"
+                >
+                  Registrar sesión
+                </button>
               </div>
               {sessionError && <p className="mb-2 text-sm text-error">{sessionError}</p>}
 
@@ -714,22 +651,212 @@ export function GameDetail() {
                   {sessions.map((s) => (
                     <li
                       key={s.id}
-                      className="flex items-center justify-between rounded-md bg-background/40 px-3 py-2 text-sm ring-1 ring-primary-dark/30"
+                      className="flex items-center justify-between rounded-xl bg-background/40 py-1 pl-3 pr-1 text-sm ring-1 ring-primary-dark/30"
                     >
                       <span className="text-lavender">
                         {formatDate(s.played_at)} — {s.duration_minutes} min
                       </span>
                       <button
-                        onClick={() => handleDeleteSession(s.id)}
-                        className="text-xs text-error"
+                        onClick={() => handleDeleteSession(s)}
+                        aria-label={`Eliminar sesión de ${s.duration_minutes} min`}
+                        className="flex h-10 w-10 items-center justify-center rounded-full text-lavender active:bg-error/10 active:text-error"
                       >
-                        Eliminar
+                        <Trash2 size={16} />
                       </button>
                     </li>
                   ))}
                 </ul>
               )}
             </SectionCard>
+
+            {/* Estas dos secciones incluyen su propia tarjeta y no se muestran
+                si no hay datos (juego de consola sin precios, IGDB sin tiempos). */}
+            {status === 'pendiente' && (
+              <GameDeals title={game.title} steamAppId={game.steam_appid} />
+            )}
+
+            <TimeToBeat igdbId={game.igdb_id} title={game.title} />
+
+            <div ref={notesRef} className="scroll-mt-20">
+              <SectionCard icon={StickyNote} title="Notas y reseña">
+                <div className="flex flex-col gap-3">
+                  <label className="block">
+                    <span className="mb-1 block text-xs text-lavender">Notas</span>
+                    <textarea
+                      value={current.notes ?? ''}
+                      onChange={(e) => setField({ notes: e.target.value })}
+                      rows={3}
+                      placeholder="Notas de progreso, spoilers, pendientes..."
+                      className={inputClass}
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="mb-1 block text-xs text-lavender">Reseña</span>
+                    <textarea
+                      value={current.review ?? ''}
+                      onChange={(e) => setField({ review: e.target.value })}
+                      rows={4}
+                      placeholder="Tu opinión sobre el juego..."
+                      className={inputClass}
+                    />
+                  </label>
+                </div>
+              </SectionCard>
+            </div>
+
+            <SectionCard icon={ClipboardList} title="Mis listas">
+              {lists.length === 0 ? (
+                <p className="text-sm text-lavender">
+                  No tienes listas todavía. Crea una desde la pestaña "Listas".
+                </p>
+              ) : (
+                <div className="flex flex-wrap gap-x-2 gap-y-3">
+                  {lists.map((list) => {
+                    const active = listIds.has(list.id)
+                    return (
+                      <Chip
+                        key={list.id}
+                        active={active}
+                        onClick={() => handleToggleList(list.id)}
+                        inactiveClassName="bg-background/40 text-lavender ring-1 ring-primary-dark/30"
+                      >
+                        {active ? (
+                          <Check size={14} className="-ml-0.5 mr-1" />
+                        ) : (
+                          <Plus size={14} className="-ml-0.5 mr-1" />
+                        )}
+                        {list.name}
+                      </Chip>
+                    )
+                  })}
+                </div>
+              )}
+            </SectionCard>
+
+            {game.summary && (
+              <SectionCard icon={Info} title="Acerca de">
+                <p className={`text-sm text-lavender ${!descExpanded ? 'line-clamp-4' : ''}`}>
+                  {game.summary}
+                </p>
+                <button
+                  onClick={() => setDescExpanded((v) => !v)}
+                  className="-mx-2 mt-1 min-h-11 rounded-lg px-2 text-sm font-medium text-accent"
+                >
+                  {descExpanded ? 'Leer menos' : 'Leer más'}
+                </button>
+              </SectionCard>
+            )}
+
+            {/* Campos que se tocan poco: agrupados y plegados para que la
+                pantalla no sea un scroll interminable en el teléfono. */}
+            <button
+              type="button"
+              onClick={toggleMoreDetails}
+              aria-expanded={moreOpen}
+              className="flex min-h-12 items-center justify-between rounded-2xl bg-background-surface px-4 text-sm font-semibold text-ink ring-1 ring-primary-dark/20"
+            >
+              <span className="flex items-center gap-2">
+                <SlidersHorizontal size={16} className="text-lavender" />
+                Más detalles
+                <span className="font-normal text-lavender">
+                  · plataforma, fechas, formato…
+                </span>
+              </span>
+              <ChevronDown
+                size={18}
+                className={`text-lavender transition-transform ${moreOpen ? 'rotate-180' : ''}`}
+              />
+            </button>
+
+            {moreOpen && (
+              <>
+                <SectionCard icon={Gamepad2} title="Plataforma">
+                  <PlatformPicker
+                    value={current.platform}
+                    onChange={(platform) => setField({ platform })}
+                  />
+                </SectionCard>
+
+                <SectionCard icon={Calendar} title="Fechas">
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className="block">
+                      <span className="mb-1 block text-xs text-lavender">Inicio</span>
+                      <input
+                        type="date"
+                        value={current.date_started ?? ''}
+                        onChange={(e) => setField({ date_started: e.target.value || null })}
+                        className={inputClass}
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="mb-1 block text-xs text-lavender">Fin</span>
+                      <input
+                        type="date"
+                        value={current.date_finished ?? ''}
+                        onChange={(e) => setField({ date_finished: e.target.value || null })}
+                        className={inputClass}
+                      />
+                    </label>
+                  </div>
+                </SectionCard>
+
+                <SectionCard icon={Disc} title="Formato">
+                  <FormatPicker
+                    value={current.format}
+                    onChange={(format) => setField({ format })}
+                  />
+                </SectionCard>
+
+                <SectionCard icon={Tag} title="Etiquetas">
+                  <div className="mb-2">
+                    <TagList value={current.genre} />
+                  </div>
+                  <input
+                    value={current.genre ?? ''}
+                    onChange={(e) => setField({ genre: e.target.value })}
+                    placeholder="Separa varios con coma"
+                    aria-label="Etiquetas"
+                    className={inputClass}
+                  />
+                </SectionCard>
+
+                <SectionCard icon={Layers} title="Franquicia">
+                  <input
+                    value={current.franchise ?? ''}
+                    onChange={(e) => setField({ franchise: e.target.value })}
+                    placeholder="Ej. Final Fantasy"
+                    aria-label="Franquicia"
+                    className={inputClass}
+                  />
+                </SectionCard>
+
+                <SectionCard icon={Repeat} title="Replays">
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setField({ replays: Math.max(0, (current.replays ?? 0) - 1) })
+                      }
+                      aria-label="Restar un replay"
+                      className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-primary-dark/20 text-lavender"
+                    >
+                      <Minus size={16} />
+                    </button>
+                    <span className="w-8 text-center text-lg font-semibold text-ink" aria-live="polite">
+                      {current.replays ?? 0}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setField({ replays: (current.replays ?? 0) + 1 })}
+                      aria-label="Sumar un replay"
+                      className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-primary-dark/20 text-lavender"
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </div>
+                </SectionCard>
+              </>
+            )}
           </div>
         </div>
       </PageContainer>
@@ -738,8 +865,31 @@ export function GameDetail() {
 }
 
 
-function SaveIndicator({ state, onRetry }: { state: SaveState; onRetry: () => void }) {
+function SaveIndicator({
+  state,
+  onRetry,
+  compact = false,
+}: {
+  state: SaveState
+  onRetry: () => void
+  /** Versión para la cabecera compacta: solo ícono. */
+  compact?: boolean
+}) {
   if (state === 'idle') return null
+  if (compact) {
+    if (state === 'error') {
+      return (
+        <button onClick={onRetry} aria-label="Reintentar guardado" className="flex h-11 w-9 items-center justify-center text-error">
+          <AlertCircle size={16} />
+        </button>
+      )
+    }
+    return state === 'saving' ? (
+      <Loader2 size={16} className="flex-shrink-0 animate-spin text-lavender" aria-label="Guardando" />
+    ) : (
+      <CheckCircle2 size={16} className="flex-shrink-0 text-accent" aria-label="Guardado" />
+    )
+  }
   if (state === 'error') {
     return (
       <button
@@ -765,5 +915,56 @@ function SaveIndicator({ state, onRetry }: { state: SaveState; onRetry: () => vo
         </>
       )}
     </span>
+  )
+}
+
+function CompactHeader({
+  visible,
+  title,
+  isFavorite,
+  saveState,
+  onBack,
+  onRetry,
+  onToggleFavorite,
+}: {
+  visible: boolean
+  title: string
+  isFavorite: boolean
+  saveState: SaveState
+  onBack: () => void
+  onRetry: () => void
+  onToggleFavorite: () => void
+}) {
+  return (
+    <div
+      aria-hidden={!visible}
+      className={`fixed inset-x-0 top-0 z-30 border-b border-primary-dark/30 bg-background/90 backdrop-blur transition-transform duration-200 ${
+        visible ? 'translate-y-0' : 'pointer-events-none -translate-y-full'
+      }`}
+      style={{ paddingTop: 'env(safe-area-inset-top)' }}
+    >
+      <div className="mx-auto flex h-14 max-w-xl items-center gap-2 px-2">
+        <button
+          onClick={onBack}
+          aria-label="Volver"
+          tabIndex={visible ? 0 : -1}
+          className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full text-ink active:bg-primary-dark/20"
+        >
+          <ArrowLeft size={20} />
+        </button>
+        <p className="min-w-0 flex-1 truncate font-semibold text-ink">{title}</p>
+        <SaveIndicator state={saveState} onRetry={onRetry} compact />
+        <button
+          onClick={onToggleFavorite}
+          aria-label={isFavorite ? 'Quitar de favoritos' : 'Marcar como favorito'}
+          tabIndex={visible ? 0 : -1}
+          className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full active:bg-primary-dark/20 ${
+            isFavorite ? 'text-accent' : 'text-lavender'
+          }`}
+        >
+          <Heart size={18} fill={isFavorite ? 'currentColor' : 'none'} />
+        </button>
+      </div>
+    </div>
   )
 }

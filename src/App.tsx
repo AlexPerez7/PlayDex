@@ -4,6 +4,8 @@ import { useAuth } from './hooks/useAuth'
 import { GamesProvider } from './contexts/GamesContext'
 import { ListsProvider } from './contexts/ListsContext'
 import { ToastProvider } from './contexts/ToastContext'
+import { ConfirmProvider } from './contexts/ConfirmContext'
+import { ScrollManager } from './components/ScrollManager'
 import { BottomNav } from './components/BottomNav'
 import { Library } from './pages/Library'
 
@@ -21,6 +23,9 @@ const Timeline = lazy(() => import('./pages/Timeline').then((m) => ({ default: m
 const SteamImport = lazy(() => import('./pages/SteamImport').then((m) => ({ default: m.SteamImport })))
 const SteamCallback = lazy(() => import('./pages/SteamCallback').then((m) => ({ default: m.SteamCallback })))
 const Login = lazy(() => import('./pages/Login').then((m) => ({ default: m.Login })))
+const UpdatePassword = lazy(() =>
+  import('./pages/UpdatePassword').then((m) => ({ default: m.UpdatePassword }))
+)
 const Onboarding = lazy(() => import('./pages/Onboarding').then((m) => ({ default: m.Onboarding })))
 
 function SplashScreen() {
@@ -39,7 +44,7 @@ function SplashScreen() {
 const ONBOARDING_KEY = 'playdex_onboarding_seen'
 
 function App() {
-  const { session, loading } = useAuth()
+  const { session, loading, recovering, finishRecovery } = useAuth()
   const [onboardingSeen, setOnboardingSeen] = useState(
     () => localStorage.getItem(ONBOARDING_KEY) === 'true'
   )
@@ -54,6 +59,12 @@ function App() {
   let content
   if (loading) {
     content = <SplashScreen />
+  } else if (session && recovering) {
+    content = (
+      <Suspense fallback={<SplashScreen />}>
+        <UpdatePassword onDone={finishRecovery} />
+      </Suspense>
+    )
   } else if (!session) {
     content = (
       <Suspense fallback={<SplashScreen />}>
@@ -72,6 +83,7 @@ function App() {
   } else {
     content = (
       <div className="min-h-dvh">
+        <ScrollManager />
         {/* Suspense solo alrededor de las rutas: mientras baja el chunk de
             una pantalla, la barra de navegación sigue visible. */}
         <Suspense fallback={null}>
@@ -96,9 +108,11 @@ function App() {
 
   return (
     <ToastProvider>
-      <GamesProvider>
-        <ListsProvider>{content}</ListsProvider>
-      </GamesProvider>
+      <ConfirmProvider>
+        <GamesProvider>
+          <ListsProvider>{content}</ListsProvider>
+        </GamesProvider>
+      </ConfirmProvider>
     </ToastProvider>
   )
 }

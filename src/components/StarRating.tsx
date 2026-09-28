@@ -10,12 +10,12 @@ const STAR_PATH =
 
 function Star({ fillPercent }: { fillPercent: number }) {
   return (
-    <div className="relative h-7 w-7">
+    <div className="relative h-8 w-8">
       <svg viewBox="0 0 24 24" fill="currentColor" className="absolute inset-0 h-full w-full text-primary-dark/40">
         <path d={STAR_PATH} />
       </svg>
       <div className="absolute inset-0 overflow-hidden" style={{ width: `${fillPercent}%` }}>
-        <svg viewBox="0 0 24 24" fill="currentColor" className="h-7 w-7 text-accent">
+        <svg viewBox="0 0 24 24" fill="currentColor" className="h-8 w-8 text-accent">
           <path d={STAR_PATH} />
         </svg>
       </div>
@@ -23,6 +23,10 @@ function Star({ fillPercent }: { fillPercent: number }) {
   )
 }
 
+/**
+ * Puntaje de 1 a 10 con medias estrellas: tocar la mitad izquierda de una
+ * estrella marca la media. Tocar el valor actual lo borra.
+ */
 export function StarRating({ value, onChange }: StarRatingProps) {
   const points = value ?? 0
 
@@ -33,7 +37,7 @@ export function StarRating({ value, onChange }: StarRatingProps) {
 
   return (
     <div className="flex items-center gap-2">
-      <div className="flex">
+      <div className="flex" role="group" aria-label="Puntaje">
         {Array.from({ length: STAR_COUNT }).map((_, i) => {
           const filled = points - i * 2
           const fillPercent = filled >= 2 ? 100 : filled === 1 ? 50 : 0
@@ -41,7 +45,8 @@ export function StarRating({ value, onChange }: StarRatingProps) {
             <button
               key={i}
               type="button"
-              className="p-0.5"
+              aria-label={`${i + 1} estrella${i > 0 ? 's' : ''} (${(i + 1) * 2}/10)`}
+              className="flex h-11 w-10 items-center justify-center"
               onClick={(e) => {
                 const rect = e.currentTarget.getBoundingClientRect()
                 const half = e.clientX - rect.left < rect.width / 2
@@ -53,7 +58,7 @@ export function StarRating({ value, onChange }: StarRatingProps) {
           )
         })}
       </div>
-      <span className="text-sm text-lavender">
+      <span className="text-sm text-lavender" aria-live="polite">
         {value ? `${value}/10` : 'Sin puntaje'}
       </span>
     </div>

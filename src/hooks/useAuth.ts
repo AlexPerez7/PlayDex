@@ -2,9 +2,16 @@ import { useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabaseClient'
 
+// El link del email de recuperación vuelve a la app con `type=recovery` en el
+// hash. Se lee al cargar el módulo porque supabase-js puede emitir el evento
+// PASSWORD_RECOVERY antes de que un componente llegue a suscribirse.
+const openedFromRecoveryLink =
+  typeof window !== 'undefined' && window.location.hash.includes('type=recovery')
+
 export function useAuth() {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [recovering, setRecovering] = useState(openedFromRecoveryLink)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -14,8 +21,9 @@ export function useAuth() {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session)
+      if (event === 'PASSWORD_RECOVERY') setRecovering(true)
     })
 
     return () => subscription.unsubscribe()
@@ -29,5 +37,20 @@ export function useAuth() {
 
   const signOut = () => supabase.auth.signOut()
 
-  return { session, loading, signIn, signUp, signOut }
+  const sendPasswordReset = (email: string) =>
+    supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin })
+
+  const updatePassword = (password: string) => supabase.auth.updateUser({ password })
+
+  return {
+    session,
+    loading,
+    recovering,
+    finishRecovery: () => setRecovering(false),
+    signIn,
+    signUp,
+    signOut,
+    sendPasswordReset,
+    updatePassword,
+  }
 }

@@ -39,7 +39,13 @@ export function usePlaySessions(gameId: string | undefined) {
         .single()
 
       if (error) throw error
-      setSessions((prev) => [data as PlaySession, ...prev])
+      // Mantener el orden por fecha (una sesión con fecha pasada, o restaurada
+      // con "Deshacer", no va necesariamente primera).
+      setSessions((prev) =>
+        [data as PlaySession, ...prev].sort(
+          (x, y) => new Date(y.played_at).getTime() - new Date(x.played_at).getTime()
+        )
+      )
       return data as PlaySession
     },
     [gameId]

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { SiSteam } from 'react-icons/si'
+import { ArrowLeft } from 'lucide-react'
 import {
   disconnectSteam,
   getSteamLibrary,
@@ -112,8 +113,11 @@ export function SteamImport() {
 
   return (
     <PageContainer>
-      <button onClick={() => navigate('/add')} className="mb-4 text-sm text-accent">
-        ← Volver
+      <button
+        onClick={() => navigate('/add')}
+        className="-ml-2 mb-2 flex min-h-11 items-center gap-1 rounded-full px-2 text-sm text-accent active:bg-primary-dark/20"
+      >
+        <ArrowLeft size={16} /> Volver
       </button>
 
       <h1 className="mb-1 text-xl font-semibold">Importar de Steam</h1>
@@ -201,7 +205,7 @@ export function SteamImport() {
                     <button
                       onClick={() => handleImport(game)}
                       disabled={imported || addingAppId === game.appid}
-                      className="flex-shrink-0 rounded-md bg-primary px-2.5 py-1.5 text-xs font-medium disabled:opacity-40"
+                      className="min-h-10 flex-shrink-0 rounded-lg bg-primary px-3 text-xs font-semibold disabled:opacity-40"
                     >
                       {imported
                         ? 'Importado'

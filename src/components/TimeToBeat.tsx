@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
-import { BookOpen, Layers, Trophy } from 'lucide-react'
+import { BookOpen, Hourglass, Layers, Trophy } from 'lucide-react'
 import { getTimeToBeat } from '../lib/igdb'
 import type { TimeToBeat as TimeToBeatData } from '../types/game'
 import { Skeleton } from './Skeleton'
+import { SectionCard } from './SectionCard'
 
 /**
  * Duración estimada de un juego, vía el endpoint oficial game_time_to_beats de
@@ -27,7 +28,11 @@ export function TimeToBeat({
 
   // undefined = cargando, null = sin dato o error -> no mostrar nada
   if (data === undefined) {
-    return <Skeleton className="h-14 w-full" />
+    return (
+      <SectionCard icon={Hourglass} title="Tiempo para terminar">
+        <Skeleton className="h-14 w-full" />
+      </SectionCard>
+    )
   }
   if (data === null) return null
 
@@ -40,7 +45,7 @@ export function TimeToBeat({
   if (items.length === 0) return null
 
   return (
-    <div>
+    <SectionCard icon={Hourglass} title="Tiempo para terminar">
       <div className="flex flex-col">
         {items.map((i, idx) => (
           <div
@@ -61,6 +66,6 @@ export function TimeToBeat({
         Duración estimada vía IGDB
         {data.count > 0 && ` · ${data.count} registros`}
       </p>
-    </div>
+    </SectionCard>
   )
 }

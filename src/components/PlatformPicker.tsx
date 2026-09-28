@@ -1,5 +1,7 @@
+import { Check } from 'lucide-react'
 import { COMMON_PLATFORMS } from '../lib/platforms'
 import { parseTags } from '../lib/tags'
+import { Chip } from './Chip'
 
 interface PlatformPickerProps {
   value: string | null | undefined
@@ -19,23 +21,14 @@ export function PlatformPicker({ value, onChange }: PlatformPickerProps) {
   }
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-x-2 gap-y-3">
       {options.map((platform) => {
         const active = selected.includes(platform)
         return (
-          <button
-            key={platform}
-            type="button"
-            onClick={() => toggle(platform)}
-            className={`rounded-full px-3 py-1 text-xs ${
-              active
-                ? 'bg-accent text-primary-darker'
-                : 'bg-background-surface text-lavender ring-1 ring-primary-dark/30'
-            }`}
-          >
-            {active ? '✓ ' : ''}
+          <Chip key={platform} active={active} onClick={() => toggle(platform)}>
+            {active && <Check size={14} className="-ml-0.5 mr-1" />}
             {platform}
-          </button>
+          </Chip>
         )
       })}
     </div>

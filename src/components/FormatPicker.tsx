@@ -1,5 +1,6 @@
 import { COMMON_FORMATS } from '../lib/formats'
 import { parseTags } from '../lib/tags'
+import { Chip } from './Chip'
 
 interface FormatPickerProps {
   value: string | null | undefined
@@ -17,24 +18,12 @@ export function FormatPicker({ value, onChange }: FormatPickerProps) {
   }
 
   return (
-    <div className="flex flex-wrap gap-2">
-      {COMMON_FORMATS.map((format) => {
-        const active = selected.includes(format)
-        return (
-          <button
-            key={format}
-            type="button"
-            onClick={() => toggle(format)}
-            className={`rounded-full px-3 py-1 text-xs ${
-              active
-                ? 'bg-accent text-primary-darker'
-                : 'bg-background-surface text-lavender ring-1 ring-primary-dark/30'
-            }`}
-          >
-            {format}
-          </button>
-        )
-      })}
+    <div className="flex flex-wrap gap-x-2 gap-y-3">
+      {COMMON_FORMATS.map((format) => (
+        <Chip key={format} active={selected.includes(format)} onClick={() => toggle(format)}>
+          {format}
+        </Chip>
+      ))}
     </div>
   )
 }

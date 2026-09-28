@@ -90,5 +90,23 @@ export function useListGameIds(listId: string | undefined) {
     [listId]
   )
 
-  return { gameIds, loading, removeGame }
+  /** Vuelve a agregar un juego quitado (para "Deshacer"), en su posición. */
+  const restoreGame = useCallback(
+    async (gameId: string, index: number) => {
+      if (!listId) return
+      const { error } = await supabase
+        .from('list_games')
+        .insert({ list_id: listId, game_id: gameId })
+      if (error) throw error
+      setGameIds((prev) => {
+        if (prev.includes(gameId)) return prev
+        const next = [...prev]
+        next.splice(Math.min(index, next.length), 0, gameId)
+        return next
+      })
+    },
+    [listId]
+  )
+
+  return { gameIds, loading, removeGame, restoreGame }
 }

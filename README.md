@@ -23,9 +23,9 @@ En producción: https://playdex.netlify.app/
 
 ## Funcionalidades
 
-- Login/registro con Supabase Auth
-- Biblioteca con filtros por estado/plataforma, búsqueda por título y orden (recientes, título, horas, puntaje)
-- Alta de juegos con autocompletado desde IGDB (portada, plataformas, géneros, sinopsis, año)
+- Login/registro con Supabase Auth, con recuperación de contraseña por email (el origen de la app debe estar en *Authentication → URL Configuration → Redirect URLs* de Supabase)
+- Biblioteca con filtros por estado/plataforma, búsqueda por título y orden (recientes, título, horas, puntaje); los filtros viven en la URL y se conservan al volver de un juego
+- Alta de juegos con búsqueda en IGDB mientras se escribe (portada, plataformas, géneros, sinopsis, año)
 - Vincular la cuenta de Steam ("Sign in through Steam") e importar la biblioteca con horas jugadas reales
 - Detalle/edición: estado, plataformas (multi-selección), fechas de inicio/fin, horas jugadas, puntaje (estrellas), notas, reseña
 - Precios actuales en tiendas de PC (CheapShark) para juegos en estado "Pendiente"

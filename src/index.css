@@ -28,14 +28,23 @@
 }
 
 html, body, #root {
-  height: 100%;
+  min-height: 100%;
 }
 
-html, body {
-  overflow-x: hidden;
+html {
   /* Evita que el "pull to refresh" nativo de Chrome Android recargue toda la
      PWA (Inicio tiene su propio gesto de actualizar). */
   overscroll-behavior-y: contain;
+}
+
+body {
+  /* `clip` y no `hidden`: con `overflow-x: hidden` en html y body (más
+     height: 100%), el que scrollea pasa a ser <body> y no la ventana, así que
+     window.scrollY queda siempre en 0 (se rompen la restauración de scroll,
+     el pull-to-refresh de Inicio, tocar la barra de estado de iOS para
+     subir, y el colapso de la barra de URL). `clip` recorta sin crear un
+     contenedor de scroll. */
+  overflow-x: clip;
 }
 
 body {
@@ -76,4 +85,38 @@ body {
 
 .toast-in {
   animation: toast-in 180ms ease-out;
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.sheet-in {
+  animation: sheet-in 220ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.fade-in {
+  animation: fade-in 180ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet-in,
+  .fade-in,
+  .toast-in {
+    animation: none;
+  }
 }

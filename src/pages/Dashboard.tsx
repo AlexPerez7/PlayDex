@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import {
   CheckCircle2,
   Flame,
@@ -19,9 +19,9 @@ import { PageContainer } from '../components/PageContainer'
 import { parseTags } from '../lib/tags'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../contexts/ToastContext'
+import { useConfirm } from '../contexts/ConfirmContext'
 
 export function Dashboard() {
-  const navigate = useNavigate()
   const { games, loading } = useGames()
 
   const stats = useMemo(() => {
@@ -60,17 +60,30 @@ export function Dashboard() {
 
   const highlights = [
     stats.topGenre && { icon: Tag, label: 'Género favorito', value: stats.topGenre },
-    stats.topRated && { icon: Star, label: 'Mejor puntuado', value: stats.topRated.title },
-    stats.mostPlayed && { icon: Flame, label: 'Más jugado', value: stats.mostPlayed.title },
-  ].filter(Boolean) as { icon: LucideIcon; label: string; value: string }[]
+    stats.topRated && {
+      icon: Star,
+      label: 'Mejor puntuado',
+      value: stats.topRated.title,
+      to: `/game/${stats.topRated.id}`,
+    },
+    stats.mostPlayed && {
+      icon: Flame,
+      label: 'Más jugado',
+      value: stats.mostPlayed.title,
+      to: `/game/${stats.mostPlayed.id}`,
+    },
+  ].filter(Boolean) as { icon: LucideIcon; label: string; value: string; to?: string }[]
 
   return (
     <PageContainer>
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Dashboard</h1>
-        <button onClick={() => navigate('/timeline')} className="text-sm text-accent">
+        <h1 className="text-xl font-semibold">Estadísticas</h1>
+        <Link
+          to="/timeline"
+          className="-mr-2 flex min-h-11 items-center rounded-full px-2 text-sm text-accent active:bg-primary-dark/20"
+        >
           Ver diario →
-        </button>
+        </Link>
       </div>
 
       {loading ? (
@@ -82,9 +95,14 @@ export function Dashboard() {
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            <StatsCard label="Juegos totales" value={stats.total} icon={Gamepad2} />
-            <StatsCard label="Completados" value={stats.completados} icon={CheckCircle2} />
-            <StatsCard label="En curso" value={stats.jugando} icon={Joystick} />
+            <StatsCard label="Juegos totales" value={stats.total} icon={Gamepad2} to="/" />
+            <StatsCard
+              label="Completados"
+              value={stats.completados}
+              icon={CheckCircle2}
+              to="/?estado=completado"
+            />
+            <StatsCard label="En curso" value={stats.jugando} icon={Joystick} to="/?estado=jugando" />
             <StatsCard
               label="Horas totales"
               value={`${stats.totalHoras}h`}
@@ -94,19 +112,27 @@ export function Dashboard() {
 
           {highlights.length > 0 && (
             <div className="mt-4 flex flex-col gap-2">
-              {highlights.map((h) => (
-                <div
-                  key={h.label}
-                  className="flex items-center justify-between gap-3 rounded-lg bg-background-surface p-3 ring-1 ring-primary-dark/30"
-                >
-                  <span className="flex flex-shrink-0 items-center gap-1.5 text-sm text-lavender">
-                    <h.icon size={16} /> {h.label}
-                  </span>
-                  <span className="truncate text-sm font-medium text-ink">
-                    {h.value}
-                  </span>
-                </div>
-              ))}
+              {highlights.map((h) => {
+                const inner = (
+                  <>
+                    <span className="flex flex-shrink-0 items-center gap-1.5 text-sm text-lavender">
+                      <h.icon size={16} /> {h.label}
+                    </span>
+                    <span className="truncate text-sm font-medium text-ink">{h.value}</span>
+                  </>
+                )
+                const className =
+                  'flex min-h-12 items-center justify-between gap-3 rounded-lg bg-background-surface px-3 ring-1 ring-primary-dark/30'
+                return h.to ? (
+                  <Link key={h.label} to={h.to} className={`${className} active:bg-primary-dark/20`}>
+                    {inner}
+                  </Link>
+                ) : (
+                  <div key={h.label} className={className}>
+                    {inner}
+                  </div>
+                )
+              })}
             </div>
           )}
         </>
@@ -120,10 +146,17 @@ export function Dashboard() {
 function AccountCard() {
   const { session, signOut } = useAuth()
   const { showError } = useToast()
+  const confirm = useConfirm()
   const [signingOut, setSigningOut] = useState(false)
 
   async function handleSignOut() {
-    if (!confirm('¿Cerrar sesión en este dispositivo?')) return
+    const ok = await confirm({
+      title: '¿Cerrar sesión?',
+      message: 'Tus datos quedan guardados en tu cuenta; solo se cierra la sesión en este dispositivo.',
+      confirmLabel: 'Cerrar sesión',
+      danger: true,
+    })
+    if (!ok) return
     setSigningOut(true)
     const { error } = await signOut()
     if (error) {
