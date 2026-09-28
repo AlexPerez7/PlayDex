@@ -15,6 +15,7 @@
 //                       (`steamAppIds`), vía external_games.
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
 import { handlePreflight, jsonResponse, errorResponse } from '../_shared/http.ts'
+import { requireUser } from '../_shared/supabase.ts'
 
 const TWITCH_CLIENT_ID = Deno.env.get('TWITCH_CLIENT_ID')!
 const TWITCH_CLIENT_SECRET = Deno.env.get('TWITCH_CLIENT_SECRET')!
@@ -188,6 +189,10 @@ limit ${candidateIds.length};`
 
 /** IGDB acepta hasta 500 resultados por consulta. */
 const IGDB_MAX_LIMIT = 500
+/** Tope de ids por request (una biblioteca de Steam grande ronda los miles). */
+const MAX_IDS = 5000
+/** Largo máximo de un texto de búsqueda / título. */
+const MAX_TEXT = 200
 
 function chunk<T>(items: T[], size: number): T[][] {
   const out: T[][] = []
@@ -198,7 +203,10 @@ function chunk<T>(items: T[], size: number): T[][] {
 /** Enteros positivos únicos (los ids vienen del cliente: se validan). */
 function toIds(value: unknown): number[] {
   if (!Array.isArray(value)) return []
-  return [...new Set(value.map(Number).filter((n) => Number.isInteger(n) && n > 0))]
+  return [...new Set(value.map(Number).filter((n) => Number.isInteger(n) && n > 0))].slice(
+    0,
+    MAX_IDS
+  )
 }
 
 async function timeToBeatBatch(ids: number[]) {
@@ -260,6 +268,9 @@ serve(async (req) => {
   if (preflight) return preflight
 
   try {
+    const auth = await requireUser(req)
+    if (auth instanceof Response) return auth
+
     const { query, mode, igdbId, title, igdbIds, steamAppIds } = await req
       .json()
       .catch(() => ({}))
@@ -269,7 +280,11 @@ serve(async (req) => {
     }
 
     if (mode === 'timeToBeat') {
-      return jsonResponse(await timeToBeat(igdbId, title))
+      const id = Number(igdbId)
+      const safeTitle = typeof title === 'string' ? title.slice(0, MAX_TEXT) : undefined
+      return jsonResponse(
+        await timeToBeat(Number.isInteger(id) && id > 0 ? id : undefined, safeTitle)
+      )
     }
 
     if (mode === 'timeToBeatBatch') {
@@ -284,7 +299,7 @@ serve(async (req) => {
       return jsonResponse({ error: 'Falta el parámetro query' }, 400)
     }
 
-    return jsonResponse(await searchByText(query))
+    return jsonResponse(await searchByText(query.slice(0, MAX_TEXT)))
   } catch (err) {
     return errorResponse(err)
   }

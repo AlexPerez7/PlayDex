@@ -6,6 +6,7 @@
 import { serve } from 'https://deno.land/std@0.224.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { handlePreflight, jsonResponse, errorResponse } from '../_shared/http.ts'
+import { requireUser } from '../_shared/supabase.ts'
 
 const CACHE_TTL_MS = 12 * 60 * 60 * 1000
 
@@ -94,10 +95,19 @@ serve(async (req) => {
   if (preflight) return preflight
 
   try {
-    const { title, steamAppId } = await req.json().catch(() => ({}))
-    if (!title || typeof title !== 'string') {
+    // Solo usuarios logueados: la función escribe en price_cache con service
+    // role, así que abierta a cualquiera serviría para llenar la cache con
+    // basura y agotar el rate limit de CheapShark.
+    const auth = await requireUser(req)
+    if (auth instanceof Response) return auth
+
+    const body = await req.json().catch(() => ({}))
+    const title = typeof body.title === 'string' ? body.title.trim().slice(0, 200) : ''
+    if (!title) {
       return jsonResponse({ error: 'Falta el parámetro title' }, 400)
     }
+    const appId = Number(body.steamAppId)
+    const steamAppId = Number.isInteger(appId) && appId > 0 ? appId : undefined
 
     const cacheKey = steamAppId
       ? `steam:${steamAppId}`

@@ -64,6 +64,8 @@ En producción: https://playdex.netlify.app/
    - `STEAM_API_KEY` es una sola key de la app (se obtiene en https://steamcommunity.com/dev/apikey). Ya no hace falta `STEAM_ID`: cada usuario vincula su cuenta desde la app.
    - `game-deals` no necesita secrets (API pública); usa la `SUPABASE_SERVICE_ROLE_KEY` que Supabase inyecta automáticamente para escribir en `price_cache`.
    - `steam-auth` y `steam-library` usan el JWT del usuario para leer/escribir su fila en `profiles` (RLS).
+   - Todas las funciones exigen un **usuario logueado** (no alcanza con la anon key, que es pública).
+   - `steam-auth` solo acepta volver a orígenes permitidos: por defecto `https://playdex.netlify.app`. Para otros (previews, dominio propio): `supabase secrets set APP_ORIGINS=https://playdex.netlify.app,https://otro.dominio`
 5. Correr en desarrollo:
    ```
    npm run dev

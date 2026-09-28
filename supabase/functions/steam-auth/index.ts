@@ -16,6 +16,31 @@ import { userClient } from '../_shared/supabase.ts'
 
 const STEAM_OPENID = 'https://steamcommunity.com/openid/login'
 const STEAM_API_KEY = Deno.env.get('STEAM_API_KEY')!
+const CALLBACK_PATH = '/steam-import/callback'
+
+// Orígenes a los que Steam puede devolver al usuario. Sin esta lista, la
+// función armaba un login de Steam hacia cualquier https:// que le pasaran
+// (open redirect firmado con la reputación de la app). Configurable para
+// previews: supabase secrets set APP_ORIGINS=https://a.app,https://b.app
+const ALLOWED_ORIGINS = (Deno.env.get('APP_ORIGINS') ?? 'https://playdex.netlify.app')
+  .split(',')
+  .map((o) => o.trim().replace(/\/$/, ''))
+  .filter(Boolean)
+
+/** returnTo válido: https, origen permitido y ruta del callback. */
+function isAllowedReturnTo(value: unknown): value is string {
+  if (typeof value !== 'string') return false
+  try {
+    const url = new URL(value)
+    return (
+      url.protocol === 'https:' &&
+      ALLOWED_ORIGINS.includes(url.origin) &&
+      url.pathname === CALLBACK_PATH
+    )
+  } catch {
+    return false
+  }
+}
 
 function buildLoginUrl(returnTo: string): string {
   const realm = new URL(returnTo).origin
@@ -32,6 +57,15 @@ function buildLoginUrl(returnTo: string): string {
 
 /** Valida la respuesta de OpenID contra Steam y devuelve el SteamID64. */
 async function verifyAssertion(params: Record<string, string>): Promise<string> {
+  // La aserción tiene que venir del proveedor de Steam y apuntar a nuestra app;
+  // si no, alguien podría reutilizar una aserción emitida para otro sitio.
+  if (params['openid.op_endpoint'] !== STEAM_OPENID) {
+    throw new Error('Respuesta de OpenID de un proveedor inesperado.')
+  }
+  if (!isAllowedReturnTo(params['openid.return_to']?.split('?')[0])) {
+    throw new Error('Respuesta de OpenID para otro destino.')
+  }
+
   const body = new URLSearchParams(params)
   body.set('openid.mode', 'check_authentication')
 
@@ -86,17 +120,22 @@ serve(async (req) => {
     const { action, returnTo, params } = await req.json().catch(() => ({}))
 
     if (action === 'start') {
-      if (typeof returnTo !== 'string' || !returnTo.startsWith('https://')) {
-        return jsonResponse({ error: 'returnTo inválido (debe ser https).' }, 400)
+      if (!isAllowedReturnTo(returnTo)) {
+        return jsonResponse({ error: 'returnTo no permitido.' }, 400)
       }
       return jsonResponse({ url: buildLoginUrl(returnTo) })
     }
 
     if (action === 'verify') {
-      if (!params || typeof params !== 'object') {
+      if (!params || typeof params !== 'object' || Array.isArray(params)) {
         return jsonResponse({ error: 'Faltan los parámetros de OpenID.' }, 400)
       }
-      const steamId = await verifyAssertion(params as Record<string, string>)
+      // Solo se reenvían a Steam los campos openid.* y como strings.
+      const openid: Record<string, string> = {}
+      for (const [k, v] of Object.entries(params as Record<string, unknown>)) {
+        if (k.startsWith('openid.') && typeof v === 'string') openid[k] = v
+      }
+      const steamId = await verifyAssertion(openid)
       const player = await fetchPlayer(steamId)
 
       const { error } = await supa.from('profiles').upsert({
